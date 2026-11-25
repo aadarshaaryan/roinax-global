@@ -181,7 +181,7 @@
                 </div>
 
                 <!-- Sample 2: AROMA Ayurveda -->
-                <div class="sample-card reveal-up" style="--delay: 0.12s">
+                <div class="sample-card reveal-up" style="--delay: 0.10s">
                     <div class="sample-badge">Organic & Wellness</div>
                     <div class="sample-canvas cream-canvas">
                         <img src="/assets/images/branding/sample-aroma.jpeg" alt="AROMA Ayurveda Minimalist Leaf Logo"
@@ -194,7 +194,7 @@
                 </div>
 
                 <!-- Sample 3: Daniel Gallego Company -->
-                <div class="sample-card reveal-up" style="--delay: 0.19s">
+                <div class="sample-card reveal-up" style="--delay: 0.15s">
                     <div class="sample-badge">Corporate Emblem</div>
                     <div class="sample-canvas cyan-canvas">
                         <img src="/assets/images/branding/sample-daniel-gallego.jpeg"
@@ -203,6 +203,45 @@
                     <div class="sample-footer">
                         <h4>Daniel Gallego Company</h4>
                         <span class="sample-type">Architectural Monogram & Laurel Wreath</span>
+                    </div>
+                </div>
+
+                <!-- Sample 4: ROINAX Global Modular Quadrant -->
+                <div class="sample-card reveal-up" style="--delay: 0.20s">
+                    <div class="sample-badge">Corporate Grid Monogram</div>
+                    <div class="sample-canvas forest-canvas">
+                        <img src="/assets/images/branding/sample-roinax-quadrant.jpeg"
+                            alt="ROINAX Global Modular Quadrant Emblem Logo" class="sample-img" loading="lazy">
+                    </div>
+                    <div class="sample-footer">
+                        <h4>ROINAX Global</h4>
+                        <span class="sample-type">Geometric 4-Tile Brand Matrix</span>
+                    </div>
+                </div>
+
+                <!-- Sample 5: RG Driven By Quality -->
+                <div class="sample-card reveal-up" style="--delay: 0.25s">
+                    <div class="sample-badge">Editorial Serif Monogram</div>
+                    <div class="sample-canvas crimson-canvas">
+                        <img src="/assets/images/branding/sample-rg-editorial.jpeg"
+                            alt="RG Bold High-Contrast Serif Monogram" class="sample-img" loading="lazy">
+                    </div>
+                    <div class="sample-footer">
+                        <h4>RG Heritage Collection</h4>
+                        <span class="sample-type">High-Contrast Typographic Lockup</span>
+                    </div>
+                </div>
+
+                <!-- Sample 6: Aldenaire Creative Studio -->
+                <div class="sample-card reveal-up" style="--delay: 0.30s">
+                    <div class="sample-badge">Minimalist Wordmark</div>
+                    <div class="sample-canvas slate-canvas">
+                        <img src="/assets/images/branding/sample-aldenaire-studio.jpeg"
+                            alt="Aldenaire Creative Studio Calligraphic 'W' Monogram" class="sample-img" loading="lazy">
+                    </div>
+                    <div class="sample-footer">
+                        <h4>Aldenaire Creative Studio</h4>
+                        <span class="sample-type">Calligraphic Script & Contemporary Type</span>
                     </div>
                 </div>
             </div>
@@ -417,3 +456,26 @@
         </div>
     </section>
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const triggers = document.querySelectorAll('.faq-trigger');
+        triggers.forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+                triggers.forEach(t => {
+                    t.setAttribute('aria-expanded', 'false');
+                    const panel = t.nextElementSibling;
+                    if (panel) panel.style.maxHeight = null;
+                });
+                if (!isExpanded) {
+                    trigger.setAttribute('aria-expanded', 'true');
+                    const panel = trigger.nextElementSibling;
+                    if (panel) {
+                        panel.style.maxHeight = panel.scrollHeight + 'px';
+                    }
+                }
+            });
+        });
+    });
+</script>
