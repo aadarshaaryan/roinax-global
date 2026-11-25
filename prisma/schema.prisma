@@ -57,3 +57,12 @@ model CartItem {
   @@unique([cartId, deviceId])
   @@map("cart_items")
 }
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

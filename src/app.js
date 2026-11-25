@@ -4,7 +4,9 @@ import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import expressLayouts from 'express-ejs-layouts';
+import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 
+import prisma from './lib/prisma.js';
 import authRoutes from './routes/auth.routes.js';
 import pageRoutes from './routes/page.routes.js';
 import cartRoutes from './routes/cart.routes.js';
@@ -33,13 +35,18 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 
 app.set('trust proxy', 1);
 
-// Session configuration
+// Persistent Prisma Session Store for Production
 app.use(
   session({
     name: 'roinax_sid',
-    secret: process.env.SESSION_SECRET || 'roinax_dev_secret_key',
+    secret: process.env.SESSION_SECRET || 'roinax_session_secret_key_2026',
     resave: false,
     saveUninitialized: false,
+    store: new PrismaSessionStore(prisma, {
+      checkPeriod: 2 * 60 * 1000, // Prunes expired sessions every 2 minutes
+      dbRecordIdIsSessionId: true,
+      dbRecordIdFunction: undefined,
+    }),
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
