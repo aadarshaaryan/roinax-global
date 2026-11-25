@@ -62,14 +62,45 @@ app.use('/', pageRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/contact', contactRoutes);
 
-// Error handler
+// 404 Catch-All Handler (Must be after all routes)
+app.use((req, res, next) => {
+  res.status(404);
+
+  // Return JSON if requested by API clients / AJAX
+  if (req.xhr || req.headers.accept?.includes('application/json')) {
+    return res.json({
+      success: false,
+      message: 'Resource not found or endpoint does not exist.',
+    });
+  }
+
+  // Render standalone 404 view bypassing the base layout
+  return res.render('pages/404', {
+    layout: false,
+    title: '404 - Page Not Found | ROINAX Global',
+    path: req.originalUrl,
+  });
+});
+
+// Final 500 Error Handler
 app.use((err, req, res, next) => {
   console.error('[SERVER_ERROR]:', err);
   const status = err.status || 500;
-  res.status(status).json({
-    success: false,
-    message: err.message || 'Internal server error.',
+  
+  if (req.xhr || req.headers.accept?.includes('application/json')) {
+    return res.status(status).json({
+      success: false,
+      message: err.message || 'Internal server error.',
+    });
+  }
+
+  return res.status(status).render('pages/500', {
+    layout: false,
+    title: '500 - Server Error | ROINAX Global',
+    error: process.env.NODE_ENV === 'development' ? err : null,
   });
 });
+
+
 
 export default app;

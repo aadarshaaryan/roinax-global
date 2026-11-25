@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= typeof title !=='undefined' ? title : '404 - Page Not Found | ROINAX Global' %>
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-deep: #070c09;
+            --bg-card: #0d1611;
+            --border: rgba(130, 209, 43, 0.18);
+            --lime: #82d12b;
+            --lime-hover: #98e63b;
+            --text-white: #ffffff;
+            --text-muted: #95a59c;
+            --text-dim: #5c6c62;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-white);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient background glow */
+        .glow-orb {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 520px;
+            height: 520px;
+            background: radial-gradient(circle, rgba(130, 209, 43, 0.12) 0%, transparent 68%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .error-container {
+            position: relative;
+            z-index: 2;
+            max-width: 620px;
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 56px 40px;
+            text-align: center;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(130, 209, 43, 0.05);
+            backdrop-filter: blur(12px);
+        }
+
+        .error-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(130, 209, 43, 0.1);
+            border: 1px solid rgba(130, 209, 43, 0.3);
+            color: var(--lime);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 24px;
+        }
+
+        .error-glitch-code {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(5.5rem, 14vw, 8rem);
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            color: var(--text-white);
+            margin-bottom: 12px;
+            background: linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.25) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: var(--text-white);
+            letter-spacing: -0.01em;
+        }
+
+        .error-desc {
+            font-size: 0.94rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .missing-path {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(130, 209, 43, 0.3);
+            color: var(--lime);
+            font-family: monospace;
+            font-size: 0.85rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            margin-bottom: 32px;
+            word-break: break-all;
+        }
+
+        .btn-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 13px 26px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--lime);
+            color: #0c140e;
+            border: 1px solid var(--lime);
+        }
+
+        .btn-primary:hover {
+            background: var(--lime-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(130, 209, 43, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-white);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-white);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .error-footer {
+            margin-top: 36px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .error-footer a {
+            color: var(--lime);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .error-footer a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .error-container {
+                padding: 40px 24px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .error-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow-orb"></div>
+
+    <div class="error-container">
+        <div class="error-badge">
+            <i class="fa-solid fa-triangle-exclamation"></i> Error Code 404
+        </div>
+
+        <div class="error-glitch-code">404</div>
+
+        <h1 class="error-title">Page Route Unresolved</h1>
+
+        <p class="error-desc">
+            The requested module, endpoint, or corporate document could not be located on the server. It may have been
+            relocated, restructured, or temporarily removed.
+        </p>
+
+        <% if (typeof path !=='undefined' && path) { %>
+            <div class="missing-path">
+                <i class="fa-solid fa-terminal" style="margin-right: 6px;"></i>
+                <%= path %>
+            </div>
+            <% } %>
+
+                <div class="btn-group">
+                    <a href="/" class="btn btn-primary">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Return to Portal</span>
+                    </a>
+                    <a href="/contact" class="btn btn-outline">
+                        <i class="fa-solid fa-headset"></i>
+                        <span>Corporate Support</span>
+                    </a>
+                </div>
+
+                <div class="error-footer">
+                    <span>&copy; <%= new Date().getFullYear() %> ROINAX Global. All rights reserved.</span>
+                    <a href="javascript:history.back()">
+                        <i class="fa-solid fa-arrow-left"></i> Go to Previous Page
+                    </a>
+                </div>
+    </div>
+</body>
+
+</html>
