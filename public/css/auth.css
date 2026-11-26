@@ -167,7 +167,7 @@ label {
 
 .forgot-link {
     font-size: 0.82rem;
-    color: var(--green-lime);
+    color: #bbf090;
     font-weight: 600;
     text-decoration: none;
     transition: color 0.2s ease;
@@ -427,6 +427,10 @@ label {
     border-radius: var(--radius-md);
     text-align: center;
     margin-bottom: 14px;
+}
+
+.auth-link{
+    color:#88d72f;
 }
 
 /* Modal Popup */
