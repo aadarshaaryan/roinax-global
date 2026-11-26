@@ -9,17 +9,47 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String?  @map("password_hash")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  googleId     String?  @unique @map("google_id")
-  avatarUrl    String?  @map("avatar_url")
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String?
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
+  phone        String?   @map("phone")
+  dob          DateTime? @map("date_of_birth")
+  gender       String?
+  avatarUrl    String?   @map("avatar_url")
+  googleId     String?   @map("google_id")
   cart         Cart?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("users")
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique @map("user_id")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at")
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String   @map("cart_id")
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  deviceId  String?  @map("device_id")
+  name      String?
+  productId String?  @map("product_id")
+  quantity  Int      @default(1)
+  price     Float?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("cart_items")
 }
 
 model Otp {
@@ -31,31 +61,7 @@ model Otp {
   createdAt DateTime @default(now())
 
   @@index([email, code])
-}
-
-model Cart {
-  id        String     @id @default(uuid())
-  userId    String     @unique @map("user_id")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  createdAt DateTime   @default(now()) @map("created_at")
-  items     CartItem[]
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("carts")
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  cartId    String   @map("cart_id")
-  deviceId  String   @map("device_id")
-  name      String
-  price     Int
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-
-  @@unique([cartId, deviceId])
-  @@map("cart_items")
+  @@map("otps")
 }
 
 model Session {
@@ -64,5 +70,7 @@ model Session {
   data      String
   expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("sessions")
 }

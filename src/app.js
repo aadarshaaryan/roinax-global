@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes.js';
 import pageRoutes from './routes/page.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import contactRoutes from './routes/contact.routes.js';
+import profileRoutes from './routes/profile.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,12 +21,15 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Silence favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // View engine setup
 app.use(expressLayouts);
+app.use(profileRoutes);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 app.set('layout', 'layouts/base');

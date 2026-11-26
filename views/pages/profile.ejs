@@ -1,195 +1,252 @@
-<div class="auth-card" style="max-width: 580px; margin: 2.5rem auto;">
-    <div class="brand-header">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Settings | ROINAX Global</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/profile.css" />
+</head>
+<body class="profile-body">
+  <div class="profile-container">
+    <div class="auth-card">
+      
+      <!-- Top Header -->
+      <div class="brand-header">
         <div class="brand-title-wrap">
-            <h2>Personal & Corporate Information</h2>
-            <span class="auth-tag">ACCOUNT</span>
+          <h2>My Profile</h2>
+          <span class="auth-tag">VERIFIED</span>
         </div>
         <div class="header-actions-group">
-            <!-- Profile Cart Link Button -->
-            <a href="/cart" class="btn-profile-cart" id="profileCartBtn" title="View Procurement Basket">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Cart</span>
-                <span class="cart-pill-count" id="profileCartCount">0</span>
-            </a>
-
-        </div>
-    </div>
-
-    <p style="color: #9cb1a4; font-size: 0.86rem; margin-bottom: 22px;">
-        Manage your representative name, official avatar, and registered contact details.
-    </p>
-
-    <div id="profileAlert" class="error-banner" style="display: none;"></div>
-
-    <form id="profileForm" enctype="multipart/form-data">
-        <!-- Avatar Upload & Live Preview -->
-        <div class="profile-avatar-wrap">
-            <div class="avatar-preview-box">
-                <img id="avatarPreview"
-                    src="<%= user && user.avatarUrl ? user.avatarUrl : '/assets/images/default-avatar.png' %>"
-                    alt="Profile Picture">
-            </div>
-            <div class="avatar-meta">
-                <label for="avatarInput" class="btn-upload-avatar">
-                    <i class="fa-solid fa-camera"></i> Change Photo
-                </label>
-                <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display: none;">
-                <p class="avatar-tip">PNG, JPG, or WEBP up to 2MB.</p>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="fullName">Full Name / Representative</label>
-            <div class="input-wrap">
-                <i class="fa-regular fa-user input-icon"></i>
-                <input type="text" id="fullName" name="name" value="<%= user ? user.name : '' %>" required>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="userEmail">Registered Email</label>
-            <div class="input-wrap">
-                <i class="fa-regular fa-envelope input-icon"></i>
-                <input type="email" id="userEmail" value="<%= user ? user.email : '' %>" disabled>
-            </div>
-            <span class="input-hint">Email address is permanently bound to this session ID.</span>
-        </div>
-
-        <div class="profile-action-row">
-            <button type="submit" id="btnSaveProfile" class="btn-auth-submit">
-                <span>Save Profile Updates</span>
-                <i class="fa-solid fa-check"></i>
+          <a href="/cart" class="btn-profile-cart">
+            <i class="fas fa-shopping-bag"></i> Cart
+            <% if (locals.cartCount && cartCount > 0) { %>
+              <span class="cart-pill-count"><%= cartCount %></span>
+            <% } %>
+          </a>
+          <form action="/api/auth/logout" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-profile-logout">
+              <i class="fas fa-sign-out-alt"></i> Logout
             </button>
+          </form>
         </div>
-    </form>
+      </div>
 
-    <!-- Account Session Termination Section -->
-    <div class="profile-danger-zone">
-        <div class="danger-info">
-            <h4>Session Security</h4>
-            <p>End your authenticated enterprise session on this terminal.</p>
+      <!-- Flash Notifications -->
+      <% if (locals.success_msg && success_msg.length > 0) { %>
+        <div class="error-banner success">
+          <i class="fas fa-check-circle"></i> <%= success_msg %>
         </div>
-        <button type="button" class="btn-danger-logout" id="footerLogoutBtn">
-            <i class="fa-solid fa-power-off"></i>
-            <span>Sign Out</span>
+      <% } %>
+      <% if (locals.error_msg && error_msg.length > 0) { %>
+        <div class="error-banner error">
+          <i class="fas fa-exclamation-triangle"></i> <%= error_msg %>
+        </div>
+      <% } %>
+
+      <!-- User Avatar Box -->
+      <div class="profile-avatar-wrap">
+        <div class="avatar-preview-box">
+          <img 
+            src="<%= user.avatarUrl || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.firstName || user.email) %>" 
+            alt="Avatar" 
+          />
+        </div>
+        <div class="avatar-meta">
+          <strong style="color: #fff; font-size: 0.95rem;">
+            <%= (user.firstName ? (user.firstName + ' ' + (user.lastName || '')) : user.email) %>
+          </strong>
+          <span class="avatar-tip"><%= user.email %></span>
+        </div>
+      </div>
+
+      <!-- SECTION 1: Personal Information Form -->
+      <form action="/profile/update" method="POST">
+        <div class="section-title-wrap">
+          <h3>Personal Information</h3>
+          <p class="section-sub-text">Manage your personal identification and contact details</p>
+        </div>
+
+        <div class="form-grid-2">
+          <!-- First Name -->
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <div class="input-wrap">
+              <i class="fas fa-user input-icon"></i>
+              <input 
+                type="text" 
+                id="firstName" 
+                name="firstName" 
+                value="<%= user.firstName || '' %>" 
+                placeholder="First name"
+                required 
+              />
+            </div>
+          </div>
+
+          <!-- Last Name -->
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <div class="input-wrap">
+              <i class="fas fa-user input-icon"></i>
+              <input 
+                type="text" 
+                id="lastName" 
+                name="lastName" 
+                value="<%= user.lastName || '' %>" 
+                placeholder="Last name"
+                required 
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <!-- Date of Birth -->
+          <div class="form-group">
+            <label for="dob">Date of Birth</label>
+            <div class="input-wrap">
+              <i class="fas fa-calendar-alt input-icon"></i>
+              <input 
+                type="date" 
+                id="dob" 
+                name="dob" 
+                value="<%= user.dob ? new Date(user.dob).toISOString().split('T')[0] : '' %>" 
+              />
+            </div>
+          </div>
+
+          <!-- Gender -->
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <div class="input-wrap">
+              <i class="fas fa-venus-mars input-icon"></i>
+              <select id="gender" name="gender" class="custom-select-input">
+                <option value="" disabled <%= !user.gender ? 'selected' : '' %>>Select Gender</option>
+                <option value="Male" <%= user.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                <option value="Female" <%= user.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                <option value="Other" <%= user.gender === 'Other' ? 'selected' : '' %>>Other</option>
+                <option value="Prefer not to say" <%= user.gender === 'Prefer not to say' ? 'selected' : '' %>>Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile No -->
+        <div class="form-group">
+          <label for="phone">Mobile No.</label>
+          <div class="input-wrap">
+            <i class="fas fa-phone-alt input-icon"></i>
+            <input 
+              type="tel" 
+              id="phone" 
+              name="phone" 
+              pattern="[0-9]{10}" 
+              maxlength="10" 
+              value="<%= user.phone || '' %>" 
+              placeholder="10-digit mobile number" 
+            />
+          </div>
+          <span class="input-hint">Used for order delivery verification and account notices.</span>
+        </div>
+
+        <button type="submit" class="btn-auth-submit">
+          <i class="fas fa-save"></i> Save Changes
         </button>
+      </form>
+
+      <hr class="profile-section-divider" />
+
+      <!-- SECTION 2: Session Security & Password Update -->
+      <div class="section-title-wrap">
+        <h3>Session Security</h3>
+        <p class="section-sub-text">Manage active account credentials and authentication methods</p>
+      </div>
+
+      <div class="security-status-card">
+        <div class="session-indicator-dot"></div>
+        <div class="security-status-info">
+          <p class="security-session-label">Current Active Session</p>
+          <p class="security-session-meta">
+            Authenticated via: <strong><%= user.password ? 'Email & Password' : 'Google OAuth' %></strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Update Password Directly Below Session Security -->
+      <form action="/profile/update-password" method="POST" class="password-update-form">
+        <h4 class="sub-form-heading"><i class="fas fa-key"></i> Update Password</h4>
+
+        <% if (user.password) { %>
+          <div class="form-group">
+            <label for="currentPassword">Current Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock input-icon"></i>
+              <input 
+                type="password" 
+                id="currentPassword" 
+                name="currentPassword" 
+                placeholder="Enter current password" 
+                required 
+                autocomplete="current-password" 
+              />
+            </div>
+          </div>
+        <% } %>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-shield-alt input-icon"></i>
+              <input 
+                type="password" 
+                id="newPassword" 
+                name="newPassword" 
+                placeholder="Minimum 8 characters" 
+                minlength="8" 
+                required 
+                autocomplete="new-password" 
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm New Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-check-double input-icon"></i>
+              <input 
+                type="password" 
+                id="confirmPassword" 
+                name="confirmPassword" 
+                placeholder="Confirm new password" 
+                minlength="8" 
+                required 
+                autocomplete="new-password" 
+              />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth-submit btn-secondary-submit">
+          <i class="fas fa-lock"></i> Update Password
+        </button>
+      </form>
+
+      <!-- Danger Zone -->
+      <div class="profile-danger-zone">
+        <div class="danger-info">
+          <h4>Sign Out</h4>
+          <p>End your active session securely on this browser.</p>
+        </div>
+        <form action="/api/auth/logout" method="POST" style="margin: 0;">
+          <button type="submit" class="btn-danger-logout">
+            <i class="fas fa-power-off"></i> Sign Out
+          </button>
+        </form>
+      </div>
+
     </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const avatarInput = document.getElementById('avatarInput');
-        const avatarPreview = document.getElementById('avatarPreview');
-        const profileForm = document.getElementById('profileForm');
-        const btnSave = document.getElementById('btnSaveProfile');
-        const alertBox = document.getElementById('profileAlert');
-        const cartCountEl = document.getElementById('profileCartCount');
-
-        // Fetch live server cart count to update the badge
-        async function fetchCartCount() {
-            try {
-                const res = await fetch('/api/cart');
-                const data = await res.json();
-                if (data.success && Array.isArray(data.items)) {
-                    const totalCount = data.items.reduce((sum, item) => sum + (parseInt(item.quantity, 10) || 0), 0);
-                    if (cartCountEl) cartCountEl.textContent = totalCount;
-                }
-            } catch (err) {
-                console.warn('Could not fetch cart status:', err);
-            }
-        }
-        fetchCartCount();
-
-        // Local instant preview with strict 2MB validation
-        avatarInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 2 * 1024 * 1024) {
-                alert('File exceeds 2MB limit. Please choose a smaller image.');
-                avatarInput.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                avatarPreview.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        // Submit multipart FormData directly to server
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            alertBox.style.display = 'none';
-
-            const name = document.getElementById('fullName').value.trim();
-            if (!name) {
-                alertBox.textContent = 'Please provide a valid name.';
-                alertBox.className = 'error-banner error';
-                alertBox.style.display = 'flex';
-                return;
-            }
-
-            btnSave.disabled = true;
-            btnSave.innerHTML = '<span>Saving...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
-
-            const formData = new FormData();
-            formData.append('name', name);
-            if (avatarInput.files[0]) {
-                formData.append('avatar', avatarInput.files[0]);
-            }
-
-            try {
-                const res = await fetch('/api/auth/update-profile', {
-                    method: 'PUT',
-                    body: formData
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    alertBox.className = 'error-banner success';
-                    alertBox.textContent = 'Profile successfully updated!';
-                    alertBox.style.display = 'flex';
-
-                    if (data.user && data.user.avatarUrl) {
-                        avatarPreview.src = data.user.avatarUrl;
-                    }
-                    avatarInput.value = '';
-                } else {
-                    alertBox.className = 'error-banner error';
-                    alertBox.textContent = data.message || 'Failed to update profile.';
-                    alertBox.style.display = 'flex';
-                }
-            } catch (err) {
-                alertBox.className = 'error-banner error';
-                alertBox.textContent = 'Network communication failure. Please verify server connection.';
-                alertBox.style.display = 'flex';
-            } finally {
-                btnSave.disabled = false;
-                btnSave.innerHTML = '<span>Save Profile Updates</span> <i class="fa-solid fa-check"></i>';
-            }
-        });
-
-        // Logout handler triggering POST /api/auth/logout
-        async function handleLogout() {
-            try {
-                const res = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' }
-                });
-                const data = await res.json();
-                window.location.href = data.redirectUrl || '/login';
-            } catch {
-                window.location.href = '/login';
-            }
-        }
-
-        const headerLogoutBtn = document.getElementById('headerLogoutBtn');
-        const footerLogoutBtn = document.getElementById('footerLogoutBtn');
-
-        if (headerLogoutBtn) headerLogoutBtn.addEventListener('click', handleLogout);
-        if (footerLogoutBtn) footerLogoutBtn.addEventListener('click', handleLogout);
-    });
-</script>
+  </div>
+</body>
+</html>
