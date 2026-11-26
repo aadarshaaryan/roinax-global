@@ -14,7 +14,7 @@ export const getCart = async (req, res) => {
             return res.status(200).json({ success: true, items: cart?.items || [] });
         }
 
-        // 2. If guest, pull directly from Server Session (No DB, No localStorage)
+        // 2. If guest, pull directly from Server Session
         const guestItems = req.session.cart || [];
         return res.status(200).json({ success: true, items: guestItems });
     } catch (error) {
@@ -44,24 +44,33 @@ export const addCartItem = async (req, res) => {
                 create: { userId }
             });
 
-            const item = await prisma.cartItem.upsert({
+            // Look up existing item by cartId & deviceId
+            const existingItem = await prisma.cartItem.findFirst({
                 where: {
-                    cartId_deviceId: {
-                        cartId: cart.id,
-                        deviceId: String(deviceId)
-                    }
-                },
-                update: {
-                    quantity: { increment: itemQty }
-                },
-                create: {
                     cartId: cart.id,
-                    deviceId: String(deviceId),
-                    name: String(name),
-                    price: itemPrice,
-                    quantity: itemQty
+                    deviceId: String(deviceId)
                 }
             });
+
+            let item;
+            if (existingItem) {
+                item = await prisma.cartItem.update({
+                    where: { id: existingItem.id },
+                    data: {
+                        quantity: existingItem.quantity + itemQty
+                    }
+                });
+            } else {
+                item = await prisma.cartItem.create({
+                    data: {
+                        cartId: cart.id,
+                        deviceId: String(deviceId),
+                        name: String(name),
+                        price: itemPrice,
+                        quantity: itemQty
+                    }
+                });
+            }
 
             return res.status(200).json({ success: true, item });
         }
@@ -113,12 +122,16 @@ export const updateCartItemQty = async (req, res) => {
                     where: { cartId: cart.id, deviceId: String(deviceId) }
                 });
             } else {
-                await prisma.cartItem.update({
-                    where: {
-                        cartId_deviceId: { cartId: cart.id, deviceId: String(deviceId) }
-                    },
-                    data: { quantity: targetQty }
+                const existingItem = await prisma.cartItem.findFirst({
+                    where: { cartId: cart.id, deviceId: String(deviceId) }
                 });
+
+                if (existingItem) {
+                    await prisma.cartItem.update({
+                        where: { id: existingItem.id },
+                        data: { quantity: targetQty }
+                    });
+                }
             }
             return res.status(200).json({ success: true });
         }
@@ -136,6 +149,7 @@ export const updateCartItemQty = async (req, res) => {
         req.session.save(() => res.status(200).json({ success: true }));
 
     } catch (error) {
+        console.error('Error updating cart quantity:', error);
         return res.status(500).json({ success: false, message: 'Update failed' });
     }
 };
@@ -163,7 +177,8 @@ export const removeCartItem = async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        return res.status(500).json({ success: false });
+        console.error('Error removing cart item:', error);
+        return res.status(500).json({ success: false, message: 'Item removal failed.' });
     }
 };
 
@@ -180,6 +195,7 @@ export const clearCart = async (req, res) => {
         req.session.cart = [];
         req.session.save(() => res.status(200).json({ success: true }));
     } catch (error) {
-        return res.status(500).json({ success: false });
+        console.error('Error clearing cart:', error);
+        return res.status(500).json({ success: false, message: 'Failed to clear cart.' });
     }
 };
