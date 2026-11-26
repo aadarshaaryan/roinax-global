@@ -4,15 +4,20 @@ import prisma from '../lib/prisma.js';
 import { sendOtpEmail } from '../lib/mailer.js';
 import { uploadToCloudinary, extractPublicId, deleteFromCloudinary } from '../lib/cloudinary.js';
 
+// Helper: Format a unified display name from firstName and lastName
+const getDisplayName = (user) => {
+  if (!user) return 'User';
+  const full = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  return full || (user.email ? user.email.split('@')[0] : 'User');
+};
+
 // Helper: Dynamically get OAuth2Client configured for User Login/Signup
 const getGoogleClient = (req) => {
   const protocol = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.get('host');
   const dynamicCallbackUrl = `${protocol}://${host}/api/auth/google/callback`;
 
-  // Prefer dedicated GOOGLE_OAUTH_CALLBACK_URL, fallback to dynamic request URL
   const callbackUrl = process.env.GOOGLE_OAUTH_CALLBACK_URL || dynamicCallbackUrl;
-
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
 
@@ -42,24 +47,32 @@ const migrateGuestCart = async (userId, guestCart) => {
     const devId = item.deviceId || item.id;
     if (!devId) continue;
 
-    await prisma.cartItem.upsert({
+    // Use findFirst or upsert without composite unique assumption
+    const existingItem = await prisma.cartItem.findFirst({
       where: {
-        cartId_deviceId: {
-          cartId: cart.id,
-          deviceId: String(devId),
-        },
-      },
-      update: {
-        quantity: { increment: Number(item.quantity || item.qty || 1) },
-      },
-      create: {
         cartId: cart.id,
         deviceId: String(devId),
-        name: String(item.name || 'Hardware Device'),
-        price: Number(item.price || 0),
-        quantity: Number(item.quantity || item.qty || 1),
       },
     });
+
+    if (existingItem) {
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: {
+          quantity: existingItem.quantity + Number(item.quantity || item.qty || 1),
+        },
+      });
+    } else {
+      await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          deviceId: String(devId),
+          name: String(item.name || 'Hardware Device'),
+          price: Number(item.price || 0),
+          quantity: Number(item.quantity || item.qty || 1),
+        },
+      });
+    }
   }
 };
 
@@ -85,14 +98,14 @@ export const login = async (req, res) => {
       where: { email: normalizedEmail },
     });
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.password) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.',
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -100,15 +113,19 @@ export const login = async (req, res) => {
       });
     }
 
-    // Merge unauthenticated session cart into Supabase
+    // Merge guest cart
     const guestItems = req.session.cart || [];
     await migrateGuestCart(user.id, guestItems);
     req.session.cart = [];
 
+    const displayName = getDisplayName(user);
+
     req.session.userId = user.id;
     req.session.user = {
       id: user.id,
-      name: user.name,
+      name: displayName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       avatarUrl: user.avatarUrl || null,
     };
@@ -160,7 +177,7 @@ export const logout = (req, res) => {
 export const sendSignupOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
 
     const normalizedEmail = email.toLowerCase().trim();
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -169,7 +186,7 @@ export const sendSignupOtp = async (req, res) => {
     }
 
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await prisma.otp.deleteMany({ where: { email: normalizedEmail, type: 'SIGNUP' } });
     await prisma.otp.create({
@@ -187,8 +204,8 @@ export const sendSignupOtp = async (req, res) => {
 // POST /api/auth/verify-signup-otp
 export const verifySignupOtp = async (req, res) => {
   try {
-    const { name, email, password, otp } = req.body;
-    if (!name || !email || !password || !otp) {
+    const { name, firstName, lastName, email, password, otp } = req.body;
+    if (!email || !password || !otp) {
       return res.status(400).json({ success: false, message: 'All registration fields are required.' });
     }
 
@@ -206,26 +223,41 @@ export const verifySignupOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid or expired OTP code.' });
     }
 
+    // Parse single name string if separate first/last name were not provided
+    let finalFirstName = firstName ? firstName.trim() : '';
+    let finalLastName = lastName ? lastName.trim() : '';
+
+    if (!finalFirstName && name) {
+      const parts = name.trim().split(/\s+/);
+      finalFirstName = parts[0] || 'User';
+      finalLastName = parts.slice(1).join(' ') || '';
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: {
-        name: name.trim(),
+        firstName: finalFirstName || 'User',
+        lastName: finalLastName || null,
         email: normalizedEmail,
-        passwordHash,
+        password: passwordHash,
       },
     });
 
     await prisma.otp.deleteMany({ where: { email: normalizedEmail, type: 'SIGNUP' } });
 
-    // Migrate session items to new user account
+    // Migrate session items
     const guestItems = req.session.cart || [];
     await migrateGuestCart(user.id, guestItems);
     req.session.cart = [];
 
+    const displayName = getDisplayName(user);
+
     req.session.userId = user.id;
     req.session.user = {
       id: user.id,
-      name: user.name,
+      name: displayName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       avatarUrl: null,
     };
@@ -251,7 +283,7 @@ export const verifySignupOtp = async (req, res) => {
 export const sendForgotOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
 
     const normalizedEmail = email.toLowerCase().trim();
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -279,8 +311,8 @@ export const sendForgotOtp = async (req, res) => {
 export const resetPasswordWithOtp = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword || newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'Valid parameters required (min 6 chars).' });
+    if (!email || !otp || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'Valid parameters required (min 8 chars).' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -300,7 +332,7 @@ export const resetPasswordWithOtp = async (req, res) => {
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
       where: { email: normalizedEmail },
-      data: { passwordHash },
+      data: { password: passwordHash },
     });
 
     await prisma.otp.deleteMany({ where: { email: normalizedEmail, type: 'FORGOT_PASSWORD' } });
@@ -322,16 +354,16 @@ export const changePassword = async (req, res) => {
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized session.' });
 
     const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword || newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'Valid passwords required (min 6 chars).' });
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'Valid passwords required (min 8 chars).' });
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.passwordHash) {
+    if (!user || !user.password) {
       return res.status(400).json({ success: false, message: 'Account authenticated via Google OAuth.' });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
     }
@@ -339,7 +371,7 @@ export const changePassword = async (req, res) => {
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { password: passwordHash },
     });
 
     return res.status(200).json({ success: true, message: 'Password updated successfully.' });
@@ -358,9 +390,6 @@ export const googleAuthRedirect = (req, res) => {
   const mode = req.query.mode === 'signup' ? 'signup' : 'login';
   const { client, callbackUrl } = getGoogleClient(req);
 
-  console.log('[OAUTH_REDIRECT] Initiated for mode:', mode);
-  console.log('[OAUTH_REDIRECT] Computed callbackUrl:', callbackUrl);
-
   const url = client.generateAuthUrl({
     access_type: 'offline',
     scope: ['profile', 'email'],
@@ -369,8 +398,6 @@ export const googleAuthRedirect = (req, res) => {
     redirect_uri: callbackUrl,
     state: JSON.stringify({ mode }),
   });
-
-  console.log('[OAUTH_REDIRECT] Redirecting browser to:', url);
 
   return res.redirect(url);
 };
@@ -405,7 +432,7 @@ export const googleAuthCallback = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture } = payload;
+    const { sub: googleId, email, given_name, family_name, name, picture } = payload;
     const normalizedEmail = email.toLowerCase().trim();
 
     let user = await prisma.user.findFirst({
@@ -414,16 +441,15 @@ export const googleAuthCallback = async (req, res) => {
       },
     });
 
-    // If clicking "Sign In" but no account exists, redirect to sign up
     if (!user && mode === 'login') {
       return res.redirect('/signup?error=account_not_found');
     }
 
-    // If clicking "Sign Up" and user doesn't exist, create it
     if (!user) {
       user = await prisma.user.create({
         data: {
-          name: name || 'Google Enterprise User',
+          firstName: given_name || (name ? name.split(' ')[0] : 'User'),
+          lastName: family_name || (name ? name.split(' ').slice(1).join(' ') : null),
           email: normalizedEmail,
           googleId,
           avatarUrl: picture || null,
@@ -433,6 +459,8 @@ export const googleAuthCallback = async (req, res) => {
       const updates = {};
       if (!user.googleId) updates.googleId = googleId;
       if (!user.avatarUrl && picture) updates.avatarUrl = picture;
+      if (!user.firstName && given_name) updates.firstName = given_name;
+      if (!user.lastName && family_name) updates.lastName = family_name;
 
       if (Object.keys(updates).length > 0) {
         user = await prisma.user.update({
@@ -442,15 +470,18 @@ export const googleAuthCallback = async (req, res) => {
       }
     }
 
-    // Merge session cart to Supabase user account
     const guestItems = req.session.cart || [];
     await migrateGuestCart(user.id, guestItems);
     req.session.cart = [];
 
+    const displayName = getDisplayName(user);
+
     req.session.userId = user.id;
     req.session.user = {
       id: user.id,
-      name: user.name,
+      name: displayName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       avatarUrl: user.avatarUrl || null,
     };
@@ -478,12 +509,18 @@ export const updateProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Unauthorized session.' });
     }
 
-    const name = (req.body.name || req.body.fullName)?.trim();
-    if (!name) {
-      return res.status(400).json({ success: false, message: 'Name cannot be empty.' });
+    const { name, firstName, lastName, phone, dob, gender } = req.body;
+
+    let updatedFirstName = firstName ? firstName.trim() : undefined;
+    let updatedLastName = lastName ? lastName.trim() : undefined;
+
+    // Fallback if client sent single name/fullName string
+    if (!updatedFirstName && name) {
+      const parts = name.trim().split(/\s+/);
+      updatedFirstName = parts[0];
+      updatedLastName = parts.slice(1).join(' ') || null;
     }
 
-    // 1. Fetch current avatar to allow replacing/destroying previous upload
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { avatarUrl: true },
@@ -491,7 +528,6 @@ export const updateProfile = async (req, res) => {
 
     let avatarUrl = undefined;
 
-    // 2. Process image buffer directly with Cloudinary
     if (req.file) {
       if (existingUser?.avatarUrl) {
         const oldPublicId = extractPublicId(existingUser.avatarUrl);
@@ -504,37 +540,45 @@ export const updateProfile = async (req, res) => {
       avatarUrl = uploadResult.secure_url;
     }
 
-    // 3. Persist name & optional avatar to Supabase
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        name,
+        ...(updatedFirstName !== undefined && { firstName: updatedFirstName }),
+        ...(updatedLastName !== undefined && { lastName: updatedLastName }),
+        ...(phone !== undefined && { phone: phone ? phone.trim() : null }),
+        ...(dob !== undefined && { dob: dob ? new Date(dob) : null }),
+        ...(gender !== undefined && { gender: gender || null }),
         ...(avatarUrl && { avatarUrl }),
       },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         email: true,
+        phone: true,
+        dob: true,
+        gender: true,
         avatarUrl: true,
       },
     });
 
-    // 4. Synchronize session cache
+    const displayName = getDisplayName(updatedUser);
+
     if (req.session.user) {
-      req.session.user.name = updatedUser.name;
+      req.session.user.name = displayName;
+      req.session.user.firstName = updatedUser.firstName;
+      req.session.user.lastName = updatedUser.lastName;
       if (updatedUser.avatarUrl) {
         req.session.user.avatarUrl = updatedUser.avatarUrl;
       }
     }
 
     req.session.save((err) => {
-      if (err) {
-        console.error('Session update error:', err);
-      }
+      if (err) console.error('Session update error:', err);
       return res.status(200).json({
         success: true,
         message: 'Profile updated successfully.',
-        user: updatedUser,
+        user: { ...updatedUser, name: displayName },
       });
     });
   } catch (error) {
@@ -560,11 +604,16 @@ export const getMe = async (req, res) => {
       });
     }
 
+    // Explicitly selects valid schema fields (no unknown `name` field)
     const user = await prisma.user.findUnique({
       where: { id: req.session.userId },
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        dob: true,
+        gender: true,
         email: true,
         avatarUrl: true,
         createdAt: true,
@@ -581,10 +630,16 @@ export const getMe = async (req, res) => {
       });
     }
 
+    // Synthesize `name` so any legacy frontend scripts receiving `user.name` continue to function
+    const userResponse = {
+      ...user,
+      name: getDisplayName(user),
+    };
+
     return res.status(200).json({
       success: true,
       authenticated: true,
-      user,
+      user: userResponse,
     });
   } catch (error) {
     console.error('Get Me Error:', error);
