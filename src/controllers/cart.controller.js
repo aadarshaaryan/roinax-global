@@ -1,16 +1,8 @@
-import nodemailer from 'nodemailer';
 import prisma from '../lib/prisma.js';
+import { sendOrderEmail } from '../lib/mailer.js';
 
-// Helper: Dispatch Order & Billing Information Email via Gmail
+// Helper: Dispatch Order & Billing Information Email via Gmail REST API
 const sendOrderDetailsEmail = async ({ customerEmail, billingData, cartItems, grandTotal, subtotal, tax }) => {
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    });
-
     const itemsRows = cartItems.map((item, idx) => `
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: #1f2937;">${idx + 1}. ${item.name}</td>
@@ -63,13 +55,14 @@ const sendOrderDetailsEmail = async ({ customerEmail, billingData, cartItems, gr
         </div>
     `;
 
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_USER;
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.GMAIL_USER;
+    const recipients = [adminEmail, customerEmail].filter(Boolean);
 
-    await transporter.sendMail({
-        from: `"ROINAX Global Orders" <${process.env.EMAIL_USER}>`,
-        to: [adminEmail, customerEmail],
+    await sendOrderEmail({
+        to: recipients,
+        replyTo: customerEmail,
         subject: `[Order Registered] Hardware Procurement - ${billingData.fullName}`,
-        html: htmlContent
+        html: htmlContent,
     });
 };
 

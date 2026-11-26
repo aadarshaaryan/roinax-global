@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import { google } from 'googleapis';
 
@@ -41,13 +40,11 @@ const validateGmailConfig = () => {
 
 // Create RFC 2822 email and encode it for Gmail API
 const createRawEmail = ({ to, from, replyTo, subject, html }) => {
+  const toAddress = Array.isArray(to) ? to.join(', ') : to;
+
   const messageParts = [
-    `From: ${from}`,
-    `To: ${to}`,
-    ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
-    'Content-Type: text/html; charset=utf-8',
-    'MIME-Version: 1.0',
-    `Subject: =?utf-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `From: ${from}`, `To: ${toAddress}`,
+    ...(replyTo ? [`Reply-To: ${replyTo}`] : []), 'Content-Type: text/html; charset=utf-8', 'MIME-Version: 1.0', `Subject: =?utf-8?B?${Buffer.from(subject).toString('base64')}?=`,
     '',
     html,
   ];
@@ -113,4 +110,9 @@ export const sendOtpEmail = async (
     subject: `ROINAX Global - ${purpose} Code`,
     html: htmlContent,
   });
+};
+
+// Send Order & Billing Confirmation (Using Gmail REST API over HTTPS)
+export const sendOrderEmail = async ({ to, subject, html, replyTo }) => {
+  return sendMail({ to, subject, html, replyTo });
 };
