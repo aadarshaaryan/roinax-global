@@ -1,8 +1,7 @@
 <main class="cart-page">
     <div class="container">
         <div class="cart-page-header">
-            <h1><i class="fa-solid fa-cart-shopping"></i> Review Your <span class="text-lime">Procurement Basket</span>
-            </h1>
+            <h1><i class="fa-solid fa-cart-shopping"></i> Review Your <span class="text-lime">Procurement Basket</span></h1>
             <a href="/buy-now" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Continue Shopping</a>
         </div>
 
@@ -75,7 +74,66 @@
         </div>
     </div>
 
-    <!-- Modal 2: Merchant UPI QR Code Checkout -->
+    <!-- Modal 2: Billing Information Form -->
+    <div class="custom-modal" id="billingModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog billing-dialog">
+            <button type="button" class="modal-close" data-close>&times;</button>
+            <div class="modal-icon-header"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            <h3>Billing Information</h3>
+            <p>Provide delivery and tax details. A formal invoice copy will be emailed upon confirmation.</p>
+
+            <form id="billingForm">
+                <div class="billing-form-grid">
+                    <div class="form-group span-2">
+                        <label for="billFullName">Full Name / Business Name *</label>
+                        <input type="text" id="billFullName" name="fullName" required placeholder="e.g. John Doe / Radhe Electronics">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billEmail">Email Address *</label>
+                        <input type="email" id="billEmail" name="email" required placeholder="name@domain.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billPhone">Mobile Number *</label>
+                        <input type="tel" id="billPhone" name="phone" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit number">
+                    </div>
+
+                    <div class="form-group span-2">
+                        <label for="billAddress">Street Delivery Address *</label>
+                        <input type="text" id="billAddress" name="address" required placeholder="House/Shop No., Landmark, Area">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billCity">City *</label>
+                        <input type="text" id="billCity" name="city" required placeholder="City">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billState">State *</label>
+                        <input type="text" id="billState" name="state" required placeholder="State">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billPincode">PIN Code *</label>
+                        <input type="text" id="billPincode" name="pincode" pattern="[0-9]{6}" maxlength="6" required placeholder="6-digit PIN">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="billGstin">GSTIN (Optional)</label>
+                        <input type="text" id="billGstin" name="gstin" placeholder="22AAAAA0000A1Z5">
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBillingBtn" class="btn btn-green btn-block" style="margin-top: 14px;">
+                    <i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Merchant UPI QR Code Checkout -->
     <div class="custom-modal" id="qrModal">
         <div class="modal-backdrop"></div>
         <div class="modal-dialog qr-dialog">
@@ -86,8 +144,7 @@
             </div>
 
             <div class="qr-box">
-                <div class="qr-img-wrapper"
-                    style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 12px;">
+                <div class="qr-img-wrapper" style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 12px;">
                     <img id="qrImage" src="/assets/images/qr.jpeg" alt="Samsung Wallet UPI QR Code" class="qr-image"
                         style="width: 230px; height: auto; display: block; margin: 0 auto;"
                         onerror="this.src='/assets/images/qr.jpg'">
@@ -104,9 +161,8 @@
             <div class="qr-steps">
                 <ol>
                     <li>Open any UPI application (GPay, PhonePe, Paytm, Samsung Wallet) and scan the QR code.</li>
-                    <li>Enter the exact amount shown above and confirm payment.</li>
-                    <li>Click below to notify our dispatch desk on WhatsApp with your payment UTR / screenshot and
-                        shipping details.</li>
+                    <li>Enter the exact amount shown above and complete the payment.</li>
+                    <li>Your billing information has been registered. Notify our dispatch desk on WhatsApp with your payment UTR / screenshot.</li>
                 </ol>
             </div>
 
@@ -123,6 +179,7 @@
 
         let cartItems = [];
         let currentUser = null;
+        let lastBillingData = null;
 
         const container = document.getElementById('cartItemsContainer');
         const layout = document.getElementById('cartLayoutGrid');
@@ -212,23 +269,19 @@
             if (dec) {
                 const deviceId = dec.dataset.id;
                 const currentQty = parseInt(dec.dataset.qty, 10);
-                const newQty = currentQty - 1;
-
                 await fetch('/api/cart/update-qty', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, quantity: newQty })
+                    body: JSON.stringify({ deviceId, quantity: currentQty - 1 })
                 });
                 await loadServerCart();
             } else if (inc) {
                 const deviceId = inc.dataset.id;
                 const currentQty = parseInt(inc.dataset.qty, 10);
-                const newQty = currentQty + 1;
-
                 await fetch('/api/cart/update-qty', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, quantity: newQty })
+                    body: JSON.stringify({ deviceId, quantity: currentQty + 1 })
                 });
                 await loadServerCart();
             } else if (rem) {
@@ -246,6 +299,7 @@
         });
 
         const authModal = document.getElementById('authGateModal');
+        const billingModal = document.getElementById('billingModal');
         const qrModal = document.getElementById('qrModal');
 
         function openModal(m) {
@@ -265,6 +319,7 @@
             bg.addEventListener('click', () => closeModal(bg.closest('.custom-modal')));
         });
 
+        // 1. Click "Pay via UPI QR Code" -> Opens Billing Modal (or Auth Gate if guest)
         const payBtn = document.getElementById('openPayQrBtn');
         if (payBtn) {
             payBtn.addEventListener('click', () => {
@@ -275,21 +330,80 @@
                     return;
                 }
 
-                const sub = cartItems.reduce((s, i) => s + (Number(i.price) * (i.quantity || 1)), 0);
-                const total = sub + Math.round(sub * 0.18);
+                // Prefill user profile details if available
+                if (currentUser) {
+                    document.getElementById('billFullName').value = currentUser.name || (currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : '');
+                    document.getElementById('billEmail').value = currentUser.email || '';
+                    if (currentUser.phone) document.getElementById('billPhone').value = currentUser.phone;
+                }
 
-                const qrImg = document.getElementById('qrImage');
-                qrImg.src = '/assets/images/qr.jpeg';
-                document.getElementById('qrTotalDisplay').textContent = formatINR(total);
-
-                openModal(qrModal);
+                openModal(billingModal);
             });
         }
 
+        // 2. Submit Billing Info -> Sends email to Gmail and opens QR modal
+        const billingForm = document.getElementById('billingForm');
+        billingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBillingBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting & Generating QR...';
+
+            const formData = new FormData(billingForm);
+            const billingData = Object.fromEntries(formData.entries());
+            lastBillingData = billingData;
+
+            try {
+                const response = await fetch('/api/cart/submit-billing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(billingData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    alert(result.message || 'Failed to submit billing information. Please retry.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment';
+                    return;
+                }
+
+                // Calculate totals for QR
+                const sub = cartItems.reduce((s, i) => s + (Number(i.price) * (i.quantity || 1)), 0);
+                const total = sub + Math.round(sub * 0.18);
+
+                document.getElementById('qrTotalDisplay').textContent = formatINR(total);
+                document.getElementById('qrImage').src = '/assets/images/qr.jpeg';
+
+                // Close Billing Modal & Open QR Modal
+                closeModal(billingModal);
+                openModal(qrModal);
+
+            } catch (err) {
+                console.error('Billing submit error:', err);
+                alert('Network issue while submitting details. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment';
+            }
+        });
+
+        // 3. Confirm payment on WhatsApp
         function sendWhatsApp(prepaid = false) {
             let text = prepaid ? "*PAYMENT COMPLETED - HARDWARE ORDER*%0A%0A" : "*HARDWARE INQUIRY*%0A%0A";
-            if (currentUser) text += `*Customer:* ${currentUser.name}%0A*Email:* ${currentUser.email}%0A%0A`;
-            text += "*Items:*%0A";
+            
+            const customerName = lastBillingData?.fullName || currentUser?.name || 'Customer';
+            const customerEmail = lastBillingData?.email || currentUser?.email || '';
+            const customerPhone = lastBillingData?.phone || '';
+
+            text += `*Customer:* ${customerName}%0A*Email:* ${customerEmail}%0A`;
+            if (customerPhone) text += `*Mobile:* ${customerPhone}%0A`;
+            if (lastBillingData?.address) {
+                text += `*Delivery To:* ${lastBillingData.address}, ${lastBillingData.city}, ${lastBillingData.state} - ${lastBillingData.pincode}%0A`;
+            }
+            text += "%0A*Items:*%0A";
 
             let sub = 0;
             cartItems.forEach((item, i) => {
@@ -302,7 +416,7 @@
             const grand = sub + Math.round(sub * 0.18);
             text += `%0A*Grand Total (incl 18% GST):* ₹${grand.toLocaleString('en-IN')}%0A`;
             if (prepaid) {
-                text += "%0A*Payment Method:* UPI QR (WASIM KARIM / rxw@pingpay)%0A*Status:* Paid. Attaching transaction screenshot & address.";
+                text += "%0A*Payment Method:* UPI QR (WASIM KARIM / rxw@pingpay)%0A*Status:* Paid. Attaching transaction screenshot.";
             }
 
             window.open(`https://wa.me/917318692999?text=${text}`, '_blank');

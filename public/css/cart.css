@@ -364,7 +364,7 @@ html, body {
 }
 
 /* ==========================================================================
-   MODALS (Full Mobile Scroll & Touch Optimization)
+   MODALS
    ========================================================================== */
 .custom-modal {
     position: fixed;
@@ -491,6 +491,61 @@ html, body {
     background: rgba(255, 255, 255, 0.12);
 }
 
+/* Billing Information Modal */
+.billing-dialog {
+    max-width: 540px;
+    text-align: left;
+}
+
+.billing-dialog .modal-icon-header {
+    margin: 0 auto 12px;
+}
+
+.billing-dialog h3,
+.billing-dialog p {
+    text-align: center;
+}
+
+.billing-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.billing-form-grid .span-2 {
+    grid-column: span 2;
+}
+
+.billing-form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.billing-form-grid label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #c9d8ce;
+}
+
+.billing-form-grid input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    padding: 10px 12px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.billing-form-grid input:focus {
+    border-color: var(--green-lime);
+    background: rgba(255, 255, 255, 0.07);
+}
+
 /* QR Code Modal Dialog */
 .qr-dialog {
     max-width: 440px;
@@ -610,6 +665,15 @@ html, body {
     .modal-dialog {
         padding: 1.5rem 1.15rem;
         max-height: 90vh;
+    }
+
+    .billing-form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .billing-form-grid .span-2 {
+        grid-column: span 1;
     }
 
     .qr-image {

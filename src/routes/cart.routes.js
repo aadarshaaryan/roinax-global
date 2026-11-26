@@ -4,16 +4,17 @@ import {
     addCartItem,
     updateCartItemQty,
     removeCartItem,
-    clearCart
+    clearCart,
+    submitBillingAndOrder
 } from '../controllers/cart.controller.js';
 
 const router = express.Router();
 
-// Publicly reachable (Server-session tracks guest vs user automatically)
 router.get('/', getCart);
 router.post('/add', addCartItem);
 router.post('/update-qty', updateCartItemQty);
 router.delete('/item/:deviceId', removeCartItem);
 router.delete('/clear', clearCart);
+router.post('/submit-billing', submitBillingAndOrder);
 
 export default router;
