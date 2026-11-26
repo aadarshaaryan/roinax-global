@@ -1,9 +1,17 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
 import prisma from '../lib/prisma.js';
 import { requireAuth, redirectIfAuth, ensureAuth } from '../middleware/auth.middleware.js';
+import { uploadToCloudinary, extractPublicId, deleteFromCloudinary } from '../lib/cloudinary.js';
 
 const router = Router();
+
+// Multer memory storage configuration for 2MB avatar uploads
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }
+});
 
 // Public Views
 router.get('/', (req, res) => {
@@ -155,8 +163,49 @@ router.get('/profile', requireAuth, async (req, res) => {
     }
 });
 
-// Update Profile Personal Info (POST)
-// POST /profile/update
+// POST /profile/avatar - Cloudinary Avatar Upload
+router.post('/profile/avatar', requireAuth, upload.single('avatar'), async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.user?.id;
+
+        if (!req.file) {
+            if (req.flash) req.flash('error_msg', 'No file was chosen for upload.');
+            return res.redirect('/profile');
+        }
+
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { avatarUrl: true }
+        });
+
+        if (existingUser?.avatarUrl) {
+            const oldPublicId = extractPublicId(existingUser.avatarUrl);
+            if (oldPublicId) {
+                await deleteFromCloudinary(oldPublicId).catch(() => {});
+            }
+        }
+
+        const uploadResult = await uploadToCloudinary(req.file.buffer, 'roinax_avatars');
+
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: { avatarUrl: uploadResult.secure_url }
+        });
+
+        if (req.session.user) {
+            req.session.user.avatarUrl = updated.avatarUrl;
+        }
+
+        if (req.flash) req.flash('success_msg', 'Profile photo updated successfully.');
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Avatar upload error:', err);
+        if (req.flash) req.flash('error_msg', 'Failed to upload photo to Cloudinary.');
+        res.redirect('/profile');
+    }
+});
+
+// POST /profile/update - Update Personal Details
 router.post('/profile/update', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId || req.session.user?.id;
@@ -188,52 +237,7 @@ router.post('/profile/update', requireAuth, async (req, res) => {
     }
 });
 
-// POST /profile/update-password
-router.post('/profile/update-password', requireAuth, async (req, res) => {
-    try {
-        const userId = req.session.userId || req.session.user?.id;
-        const { currentPassword, newPassword, confirmPassword } = req.body;
-
-        if (!newPassword || newPassword.length < 8) {
-            if (req.flash) req.flash('error_msg', 'Password must be at least 8 characters long.');
-            return res.redirect('/profile');
-        }
-
-        if (newPassword !== confirmPassword) {
-            if (req.flash) req.flash('error_msg', 'New passwords do not match.');
-            return res.redirect('/profile');
-        }
-
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-
-        if (user.password) {
-            if (!currentPassword) {
-                if (req.flash) req.flash('error_msg', 'Current password is required.');
-                return res.redirect('/profile');
-            }
-            const match = await bcrypt.compare(currentPassword, user.password);
-            if (!match) {
-                if (req.flash) req.flash('error_msg', 'Current password is incorrect.');
-                return res.redirect('/profile');
-            }
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 12);
-        await prisma.user.update({
-            where: { id: userId },
-            data: { password: hashedPassword }
-        });
-
-        if (req.flash) req.flash('success_msg', 'Password updated successfully.');
-        res.redirect('/profile');
-    } catch (err) {
-        console.error('Update Password Error:', err);
-        if (req.flash) req.flash('error_msg', 'Failed to update password.');
-        res.redirect('/profile');
-    }
-});
-
-// Update Password in Profile (POST)
+// POST /profile/update-password - Update Login Password
 router.post('/profile/update-password', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId || req.session.user?.id;

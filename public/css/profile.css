@@ -141,7 +141,7 @@
     transform: translateY(-1px);
 }
 
-/* Avatar Preview Box */
+/* Avatar Preview Box & Overlay */
 .profile-avatar-wrap {
     display: flex;
     align-items: center;
@@ -154,14 +154,16 @@
 }
 
 .avatar-preview-box {
-    width: 64px;
-    height: 64px;
+    position: relative;
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid var(--green-lime);
     background: #132017;
     flex-shrink: 0;
     box-shadow: 0 0 14px rgba(83, 169, 34, 0.25);
+    cursor: pointer;
 }
 
 .avatar-preview-box img {
@@ -171,14 +173,54 @@
     display: block;
 }
 
+.avatar-hover-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--green-lime);
+    font-size: 1.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.avatar-preview-box:hover .avatar-hover-overlay {
+    opacity: 1;
+}
+
 .avatar-meta {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 6px;
+}
+
+.btn-upload-avatar {
+    color: var(--green-lime);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.84rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(130, 209, 43, 0.1);
+    border: 1px solid rgba(130, 209, 43, 0.35);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    transition: all 0.2s var(--ease);
+}
+
+.btn-upload-avatar:hover {
+    background: rgba(130, 209, 43, 0.22);
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 .avatar-tip {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: var(--text-muted);
 }
 
@@ -232,7 +274,7 @@
     margin: 2.2rem 0;
 }
 
-/* Grid & Inputs */
+/* Form Grid & Input Styling */
 .form-grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -315,7 +357,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin-top: 5px;
 }
 
-/* Action Buttons */
+/* Submit Buttons */
 .btn-auth-submit {
     width: 100%;
     padding: 12px 20px;
@@ -341,7 +383,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     box-shadow: 0 8px 22px rgba(83, 169, 34, 0.42);
 }
 
-/* Session Security Card */
+/* Security Section */
 .security-status-card {
     display: flex;
     align-items: center;
