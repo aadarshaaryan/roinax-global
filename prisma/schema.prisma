@@ -3,20 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  email        String    @unique
-  passwordHash String?   @map("password_hash") // Optional because Google users won't have a local password
-  googleId     String?   @unique @map("google_id")
-  avatarUrl    String?   @map("avatar_url")    // Cloudinary profile image URL
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
+  email        String   @unique
+  passwordHash String?  @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  googleId     String?  @unique @map("google_id")
+  avatarUrl    String?  @map("avatar_url")
   cart         Cart?
 
   @@map("users")
@@ -26,7 +26,7 @@ model Otp {
   id        String   @id @default(uuid())
   email     String
   code      String
-  type      String   // "SIGNUP" or "FORGOT_PASSWORD"
+  type      String
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -36,10 +36,10 @@ model Otp {
 model Cart {
   id        String     @id @default(uuid())
   userId    String     @unique @map("user_id")
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     CartItem[]
   updatedAt DateTime   @updatedAt @map("updated_at")
   createdAt DateTime   @default(now()) @map("created_at")
+  items     CartItem[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("carts")
 }
@@ -47,12 +47,12 @@ model Cart {
 model CartItem {
   id        String   @id @default(uuid())
   cartId    String   @map("cart_id")
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
   deviceId  String   @map("device_id")
   name      String
   price     Int
   quantity  Int      @default(1)
   createdAt DateTime @default(now()) @map("created_at")
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, deviceId])
   @@map("cart_items")
