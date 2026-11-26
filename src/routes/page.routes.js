@@ -156,6 +156,7 @@ router.get('/profile', requireAuth, async (req, res) => {
 });
 
 // Update Profile Personal Info (POST)
+// POST /profile/update
 router.post('/profile/update', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId || req.session.user?.id;
@@ -183,6 +184,51 @@ router.post('/profile/update', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Update Profile Error:', err);
         if (req.flash) req.flash('error_msg', 'Failed to update personal details.');
+        res.redirect('/profile');
+    }
+});
+
+// POST /profile/update-password
+router.post('/profile/update-password', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.user?.id;
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 8) {
+            if (req.flash) req.flash('error_msg', 'Password must be at least 8 characters long.');
+            return res.redirect('/profile');
+        }
+
+        if (newPassword !== confirmPassword) {
+            if (req.flash) req.flash('error_msg', 'New passwords do not match.');
+            return res.redirect('/profile');
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (user.password) {
+            if (!currentPassword) {
+                if (req.flash) req.flash('error_msg', 'Current password is required.');
+                return res.redirect('/profile');
+            }
+            const match = await bcrypt.compare(currentPassword, user.password);
+            if (!match) {
+                if (req.flash) req.flash('error_msg', 'Current password is incorrect.');
+                return res.redirect('/profile');
+            }
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword }
+        });
+
+        if (req.flash) req.flash('success_msg', 'Password updated successfully.');
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Update Password Error:', err);
+        if (req.flash) req.flash('error_msg', 'Failed to update password.');
         res.redirect('/profile');
     }
 });

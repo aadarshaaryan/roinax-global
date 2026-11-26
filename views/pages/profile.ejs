@@ -15,6 +15,11 @@
               <span class="cart-pill-count"><%= cartCount %></span>
             <% } %>
           </a>
+          <form action="/api/auth/logout" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-profile-logout">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            </button>
+          </form>
         </div>
       </div>
 
@@ -30,7 +35,7 @@
         </div>
       <% } %>
 
-      <!-- Avatar Preview Wrap -->
+      <!-- User Avatar Box & Upload -->
       <div class="profile-avatar-wrap">
         <div class="avatar-preview-box">
           <img 
@@ -46,11 +51,11 @@
         </div>
       </div>
 
-      <!-- SECTION 1: Personal Details -->
+      <!-- SECTION 1: Personal Details Form -->
       <form action="/profile/update" method="POST">
         <div class="section-title-wrap">
           <h3>Personal Information</h3>
-          <p class="section-sub-text">Update your identity and contact parameters</p>
+          <p class="section-sub-text">Update your personal identification and delivery preferences</p>
         </div>
 
         <div class="form-grid-2">
@@ -133,7 +138,7 @@
               placeholder="10-digit mobile number" 
             />
           </div>
-          <span class="input-hint">Used for dispatch confirmations, account alerts, and hardware delivery.</span>
+          <span class="input-hint">Used for courier dispatches, order alerts, and enterprise support.</span>
         </div>
 
         <button type="submit" class="btn-auth-submit">
@@ -143,25 +148,25 @@
 
       <hr class="profile-section-divider" />
 
-      <!-- SECTION 2: Session Security & Password Update -->
+      <!-- SECTION 2: Session Security & Update Password -->
       <div class="section-title-wrap">
         <h3>Session Security</h3>
-        <p class="section-sub-text">Current authorization credentials and active tokens</p>
+        <p class="section-sub-text">Current session credentials and login password settings</p>
       </div>
 
       <div class="security-status-card">
         <div class="session-indicator-dot"></div>
         <div class="security-status-info">
-          <p class="security-session-label">Active Connection</p>
+          <p class="security-session-label">Current Active Session</p>
           <p class="security-session-meta">
-            Logged in via: <strong><%= user.password ? 'Email & Password' : 'Google OAuth' %></strong>
+            Authenticated via: <strong><%= user.password ? 'Email & Password' : 'Google OAuth' %></strong>
           </p>
         </div>
       </div>
 
-      <!-- Update Password Form directly below Session Security -->
+      <!-- Update Password Form -->
       <form action="/profile/update-password" method="POST" class="password-update-form">
-        <h4 class="sub-form-heading"><i class="fa-solid fa-lock"></i> Update Password</h4>
+        <h4 class="sub-form-heading"><i class="fa-solid fa-key"></i> Update Password</h4>
 
         <% if (user.password) { %>
           <div class="form-group">
@@ -184,7 +189,7 @@
           <div class="form-group">
             <label for="newPassword">New Password</label>
             <div class="input-wrap">
-              <i class="fa-solid fa-key input-icon"></i>
+              <i class="fa-solid fa-lock input-icon"></i>
               <input 
                 type="password" 
                 id="newPassword" 
@@ -219,7 +224,7 @@
         </button>
       </form>
 
-      <!-- Danger Zone -->
+      <!-- Danger Zone Sign Out -->
       <div class="profile-danger-zone">
         <div class="danger-info">
           <h4>Terminate Session</h4>
