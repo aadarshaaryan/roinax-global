@@ -107,6 +107,26 @@
           </div>
         </div>
 
+        <!-- Email Address (Uneditable / Readonly) -->
+        <div class="form-group">
+          <label for="profileEmail">
+            Email Address <span class="badge-locked"><i class="fa-solid fa-lock"></i> Permanent</span>
+          </label>
+          <div class="input-wrap input-readonly-wrap">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input 
+              type="email" 
+              id="profileEmail" 
+              value="<%= user.email %>" 
+              readonly 
+              tabindex="-1"
+              class="input-disabled"
+            />
+            <span class="input-lock-tag"><i class="fa-solid fa-shield-halved"></i> Verified</span>
+          </div>
+          <span class="input-hint">Your primary email is linked to account authentication and cannot be edited directly.</span>
+        </div>
+
         <div class="form-grid-2">
           <!-- Date of Birth -->
           <div class="form-group">

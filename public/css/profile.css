@@ -286,11 +286,27 @@
 }
 
 .form-group label {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     color: #c9d8ce;
     font-size: 0.84rem;
     font-weight: 600;
     margin-bottom: 6px;
+}
+
+.badge-locked {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.badge-locked i {
+    font-size: 0.65rem;
 }
 
 .input-wrap {
@@ -322,6 +338,39 @@
     transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Uneditable / Readonly Input Styling */
+.input-readonly-wrap {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-sm);
+}
+
+.input-wrap input.input-disabled {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+    color: #9cb1a4 !important;
+    cursor: not-allowed;
+    user-select: none;
+    padding-right: 90px;
+}
+
+.input-wrap input.input-disabled:focus {
+    box-shadow: none !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.input-lock-tag {
+    position: absolute;
+    right: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--green-lime);
+    background: rgba(83, 169, 34, 0.12);
+    border: 1px solid rgba(130, 209, 43, 0.25);
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    pointer-events: none;
+}
+
 .custom-select-input {
     cursor: pointer;
     appearance: none;
@@ -333,15 +382,15 @@
     color: #ffffff;
 }
 
-.input-wrap input:focus,
+.input-wrap input:not(.input-disabled):focus,
 .custom-select-input:focus {
     border-color: var(--green-lime);
     background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 0 10px rgba(130, 209, 43, 0.25);
 }
 
-.input-wrap input:focus + .input-icon,
-.input-wrap input:focus ~ .input-icon {
+.input-wrap input:not(.input-disabled):focus + .input-icon,
+.input-wrap input:not(.input-disabled):focus ~ .input-icon {
     color: var(--green-lime);
 }
 
