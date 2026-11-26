@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { requireAuth, redirectIfAuth } from '../middleware/auth.middleware.js';
-import { ensureAuth } from '../middleware/auth.middleware.js';
+import bcrypt from 'bcryptjs';
+import prisma from '../lib/prisma.js';
+import { requireAuth, redirectIfAuth, ensureAuth } from '../middleware/auth.middleware.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Public Views
 router.get('/', (req, res) => {
@@ -110,17 +109,27 @@ router.get('/buy-now', (req, res) => {
     });
 });
 
-// Authenticated User Profile
+// Authenticated User Profile (GET)
 router.get('/profile', requireAuth, async (req, res) => {
     try {
+        const userId = req.session.userId || req.session.user?.id;
+
         const user = await prisma.user.findUnique({
-            where: { id: req.session.userId },
+            where: { id: userId },
             select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
-                avatarUrl: true, // <-- Add this field
-                createdAt: true
+                phone: true,
+                dob: true,
+                gender: true,
+                avatarUrl: true,
+                password: true,
+                createdAt: true,
+                cart: {
+                    include: { items: true }
+                }
             }
         });
 
@@ -129,15 +138,97 @@ router.get('/profile', requireAuth, async (req, res) => {
             return res.redirect('/login');
         }
 
+        const cartCount = user.cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
         res.render('pages/profile', {
             layout: 'layouts/base',
             title: 'User Profile | ROINAX GLOBAL',
             extraCss: '/css/profile.css',
-            user
+            user,
+            cartCount,
+            success_msg: req.flash ? req.flash('success_msg') : null,
+            error_msg: req.flash ? req.flash('error_msg') : null
         });
     } catch (err) {
         console.error('Profile route error:', err);
         res.redirect('/');
+    }
+});
+
+// Update Profile Personal Info (POST)
+router.post('/profile/update', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.user?.id;
+        const { firstName, lastName, phone, dob, gender } = req.body;
+
+        const updated = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                firstName: firstName ? firstName.trim() : null,
+                lastName: lastName ? lastName.trim() : null,
+                phone: phone ? phone.trim() : null,
+                dob: dob ? new Date(dob) : null,
+                gender: gender || null
+            }
+        });
+
+        if (req.session.user) {
+            req.session.user.firstName = updated.firstName;
+            req.session.user.lastName = updated.lastName;
+            req.session.user.name = `${updated.firstName || ''} ${updated.lastName || ''}`.trim() || updated.email;
+        }
+
+        if (req.flash) req.flash('success_msg', 'Personal details updated successfully.');
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Update Profile Error:', err);
+        if (req.flash) req.flash('error_msg', 'Failed to update personal details.');
+        res.redirect('/profile');
+    }
+});
+
+// Update Password in Profile (POST)
+router.post('/profile/update-password', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.user?.id;
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 8) {
+            if (req.flash) req.flash('error_msg', 'Password must be at least 8 characters long.');
+            return res.redirect('/profile');
+        }
+
+        if (newPassword !== confirmPassword) {
+            if (req.flash) req.flash('error_msg', 'New passwords do not match.');
+            return res.redirect('/profile');
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (user.password) {
+            if (!currentPassword) {
+                if (req.flash) req.flash('error_msg', 'Current password is required.');
+                return res.redirect('/profile');
+            }
+            const match = await bcrypt.compare(currentPassword, user.password);
+            if (!match) {
+                if (req.flash) req.flash('error_msg', 'Current password is incorrect.');
+                return res.redirect('/profile');
+            }
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword }
+        });
+
+        if (req.flash) req.flash('success_msg', 'Password updated successfully.');
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Update Password Error:', err);
+        if (req.flash) req.flash('error_msg', 'Failed to update password.');
+        res.redirect('/profile');
     }
 });
 
@@ -147,15 +238,6 @@ router.get('/cart', ensureAuth, (req, res) => {
         user: req.session.user,
         layout: 'layouts/base',
         extraCss: '/css/cart.css'
-    });
-});
-
-// GET /change-password
-router.get('/change-password', ensureAuth, (req, res) => {
-    res.render('pages/change-password', {
-        title: 'Change Password - ROINAX Global',
-        user: req.session.user,
-        extraCss: ['/css/password-change.css']
     });
 });
 

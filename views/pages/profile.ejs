@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Account Settings | ROINAX Global</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link rel="stylesheet" href="/css/profile.css" />
-</head>
-<body class="profile-body">
-  <div class="profile-container">
+<section class="profile-section" style="padding: 120px 16px 60px;">
+  <div class="container" style="max-width: 680px; margin: 0 auto;">
     <div class="auth-card">
       
-      <!-- Top Header -->
+      <!-- Top Action Bar -->
       <div class="brand-header">
         <div class="brand-title-wrap">
           <h2>My Profile</h2>
@@ -19,14 +10,14 @@
         </div>
         <div class="header-actions-group">
           <a href="/cart" class="btn-profile-cart">
-            <i class="fas fa-shopping-bag"></i> Cart
+            <i class="fa-solid fa-bag-shopping"></i> Cart
             <% if (locals.cartCount && cartCount > 0) { %>
               <span class="cart-pill-count"><%= cartCount %></span>
             <% } %>
           </a>
           <form action="/api/auth/logout" method="POST" style="margin: 0;">
             <button type="submit" class="btn-profile-logout">
-              <i class="fas fa-sign-out-alt"></i> Logout
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
             </button>
           </form>
         </div>
@@ -35,36 +26,36 @@
       <!-- Flash Notifications -->
       <% if (locals.success_msg && success_msg.length > 0) { %>
         <div class="error-banner success">
-          <i class="fas fa-check-circle"></i> <%= success_msg %>
+          <i class="fa-solid fa-circle-check"></i> <%= success_msg %>
         </div>
       <% } %>
       <% if (locals.error_msg && error_msg.length > 0) { %>
         <div class="error-banner error">
-          <i class="fas fa-exclamation-triangle"></i> <%= error_msg %>
+          <i class="fa-solid fa-triangle-exclamation"></i> <%= error_msg %>
         </div>
       <% } %>
 
-      <!-- User Avatar Box -->
+      <!-- Avatar Preview Wrap -->
       <div class="profile-avatar-wrap">
         <div class="avatar-preview-box">
           <img 
             src="<%= user.avatarUrl || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.firstName || user.email) %>" 
-            alt="Avatar" 
+            alt="Profile Avatar" 
           />
         </div>
         <div class="avatar-meta">
-          <strong style="color: #fff; font-size: 0.95rem;">
+          <strong style="color: #ffffff; font-size: 1rem;">
             <%= (user.firstName ? (user.firstName + ' ' + (user.lastName || '')) : user.email) %>
           </strong>
           <span class="avatar-tip"><%= user.email %></span>
         </div>
       </div>
 
-      <!-- SECTION 1: Personal Information Form -->
+      <!-- SECTION 1: Personal Details -->
       <form action="/profile/update" method="POST">
         <div class="section-title-wrap">
           <h3>Personal Information</h3>
-          <p class="section-sub-text">Manage your personal identification and contact details</p>
+          <p class="section-sub-text">Update your identity and contact parameters</p>
         </div>
 
         <div class="form-grid-2">
@@ -72,7 +63,7 @@
           <div class="form-group">
             <label for="firstName">First Name</label>
             <div class="input-wrap">
-              <i class="fas fa-user input-icon"></i>
+              <i class="fa-solid fa-user input-icon"></i>
               <input 
                 type="text" 
                 id="firstName" 
@@ -88,7 +79,7 @@
           <div class="form-group">
             <label for="lastName">Last Name</label>
             <div class="input-wrap">
-              <i class="fas fa-user input-icon"></i>
+              <i class="fa-solid fa-user input-icon"></i>
               <input 
                 type="text" 
                 id="lastName" 
@@ -106,7 +97,7 @@
           <div class="form-group">
             <label for="dob">Date of Birth</label>
             <div class="input-wrap">
-              <i class="fas fa-calendar-alt input-icon"></i>
+              <i class="fa-solid fa-calendar-days input-icon"></i>
               <input 
                 type="date" 
                 id="dob" 
@@ -120,7 +111,7 @@
           <div class="form-group">
             <label for="gender">Gender</label>
             <div class="input-wrap">
-              <i class="fas fa-venus-mars input-icon"></i>
+              <i class="fa-solid fa-venus-mars input-icon"></i>
               <select id="gender" name="gender" class="custom-select-input">
                 <option value="" disabled <%= !user.gender ? 'selected' : '' %>>Select Gender</option>
                 <option value="Male" <%= user.gender === 'Male' ? 'selected' : '' %>>Male</option>
@@ -136,7 +127,7 @@
         <div class="form-group">
           <label for="phone">Mobile No.</label>
           <div class="input-wrap">
-            <i class="fas fa-phone-alt input-icon"></i>
+            <i class="fa-solid fa-phone input-icon"></i>
             <input 
               type="tel" 
               id="phone" 
@@ -147,11 +138,11 @@
               placeholder="10-digit mobile number" 
             />
           </div>
-          <span class="input-hint">Used for order delivery verification and account notices.</span>
+          <span class="input-hint">Used for dispatch confirmations, account alerts, and hardware delivery.</span>
         </div>
 
         <button type="submit" class="btn-auth-submit">
-          <i class="fas fa-save"></i> Save Changes
+          <i class="fa-solid fa-floppy-disk"></i> Save Personal Details
         </button>
       </form>
 
@@ -160,28 +151,28 @@
       <!-- SECTION 2: Session Security & Password Update -->
       <div class="section-title-wrap">
         <h3>Session Security</h3>
-        <p class="section-sub-text">Manage active account credentials and authentication methods</p>
+        <p class="section-sub-text">Current authorization credentials and active tokens</p>
       </div>
 
       <div class="security-status-card">
         <div class="session-indicator-dot"></div>
         <div class="security-status-info">
-          <p class="security-session-label">Current Active Session</p>
+          <p class="security-session-label">Active Connection</p>
           <p class="security-session-meta">
-            Authenticated via: <strong><%= user.password ? 'Email & Password' : 'Google OAuth' %></strong>
+            Logged in via: <strong><%= user.password ? 'Email & Password' : 'Google OAuth' %></strong>
           </p>
         </div>
       </div>
 
-      <!-- Update Password Directly Below Session Security -->
+      <!-- Update Password Form directly below Session Security -->
       <form action="/profile/update-password" method="POST" class="password-update-form">
-        <h4 class="sub-form-heading"><i class="fas fa-key"></i> Update Password</h4>
+        <h4 class="sub-form-heading"><i class="fa-solid fa-lock"></i> Update Password</h4>
 
         <% if (user.password) { %>
           <div class="form-group">
             <label for="currentPassword">Current Password</label>
             <div class="input-wrap">
-              <i class="fas fa-lock input-icon"></i>
+              <i class="fa-solid fa-shield-halved input-icon"></i>
               <input 
                 type="password" 
                 id="currentPassword" 
@@ -198,7 +189,7 @@
           <div class="form-group">
             <label for="newPassword">New Password</label>
             <div class="input-wrap">
-              <i class="fas fa-shield-alt input-icon"></i>
+              <i class="fa-solid fa-key input-icon"></i>
               <input 
                 type="password" 
                 id="newPassword" 
@@ -212,9 +203,9 @@
           </div>
 
           <div class="form-group">
-            <label for="confirmPassword">Confirm New Password</label>
+            <label for="confirmPassword">Confirm Password</label>
             <div class="input-wrap">
-              <i class="fas fa-check-double input-icon"></i>
+              <i class="fa-solid fa-check-double input-icon"></i>
               <input 
                 type="password" 
                 id="confirmPassword" 
@@ -229,24 +220,23 @@
         </div>
 
         <button type="submit" class="btn-auth-submit btn-secondary-submit">
-          <i class="fas fa-lock"></i> Update Password
+          <i class="fa-solid fa-key"></i> Update Password
         </button>
       </form>
 
       <!-- Danger Zone -->
       <div class="profile-danger-zone">
         <div class="danger-info">
-          <h4>Sign Out</h4>
-          <p>End your active session securely on this browser.</p>
+          <h4>Terminate Session</h4>
+          <p>Sign out of your active browser session immediately.</p>
         </div>
         <form action="/api/auth/logout" method="POST" style="margin: 0;">
           <button type="submit" class="btn-danger-logout">
-            <i class="fas fa-power-off"></i> Sign Out
+            <i class="fa-solid fa-power-off"></i> Sign Out
           </button>
         </form>
       </div>
 
     </div>
   </div>
-</body>
-</html>
+</section>

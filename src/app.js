@@ -11,35 +11,37 @@ import authRoutes from './routes/auth.routes.js';
 import pageRoutes from './routes/page.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import contactRoutes from './routes/contact.routes.js';
-import profileRoutes from './routes/profile.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust proxy for reverse proxies like Render / Cloudflare
+app.set('trust proxy', 1);
+
+// Security headers
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 
 // Silence favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
+// Static assets (CSS, client JS, images)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
 // View engine setup
 app.use(expressLayouts);
-app.use(profileRoutes);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 app.set('layout', 'layouts/base');
 
-// Static assets (CSS, client JS, images)
-app.use(express.static(path.join(process.cwd(), 'public')));
+// 1. Session middleware MUST run before ANY routes are mounted
+const isProd = process.env.NODE_ENV === 'production';
 
-app.set('trust proxy', 1);
-
-// Persistent Prisma Session Store for Production
 app.use(
   session({
     name: 'roinax_sid',
@@ -53,24 +55,30 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd, // Must be FALSE on http://localhost:3000
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      sameSite: 'lax',
     },
   })
 );
 
-// Mount routes
+// 2. Global locals middleware (makes session state available across all EJS templates)
+app.use((req, res, next) => {
+  res.locals.user = req.session?.user || null;
+  res.locals.userId = req.session?.userId || null;
+  next();
+});
+
+// 3. Mount Routes (All receive parsed sessions)
 app.use('/api/auth', authRoutes);
-app.use('/', pageRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/', pageRoutes); // Handles all page views including /profile and forms
 
-// 404 Catch-All Handler (Must be after all routes)
-app.use((req, res, next) => {
+// 404 Catch-All Handler
+app.use((req, res) => {
   res.status(404);
 
-  // Return JSON if requested by API clients / AJAX
   if (req.xhr || req.headers.accept?.includes('application/json')) {
     return res.json({
       success: false,
@@ -78,7 +86,6 @@ app.use((req, res, next) => {
     });
   }
 
-  // Render standalone 404 view bypassing the base layout
   return res.render('pages/404', {
     layout: false,
     title: '404 - Page Not Found | ROINAX Global',
@@ -90,7 +97,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.error('[SERVER_ERROR]:', err);
   const status = err.status || 500;
-  
+
   if (req.xhr || req.headers.accept?.includes('application/json')) {
     return res.status(status).json({
       success: false,
@@ -98,13 +105,11 @@ app.use((err, req, res, next) => {
     });
   }
 
-  return res.status(status).render('pages/500', {
+  return res.status(status).render('pages/404', {
     layout: false,
     title: '500 - Server Error | ROINAX Global',
-    error: process.env.NODE_ENV === 'development' ? err : null,
+    path: req.originalUrl,
   });
 });
-
-
 
 export default app;

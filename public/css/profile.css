@@ -1,3 +1,7 @@
+/* ==========================================================================
+   ROINAX Global - Profile Card & Settings Styles (profile.css)
+   ========================================================================== */
+
 :root {
     --green-lime: #82d12b;
     --green-main: #53a922;
@@ -20,22 +24,6 @@
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Page Layout */
-.profile-body {
-    background-color: #0b110d;
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    margin: 0;
-    padding: 40px 16px;
-    display: flex;
-    justify-content: center;
-}
-
-.profile-container {
-    width: 100%;
-    max-width: 680px;
-}
-
 /* Card Container */
 .auth-card {
     background: var(--card-bg);
@@ -54,7 +42,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.25rem;
     flex-wrap: wrap;
 }
 
@@ -88,7 +76,7 @@
     gap: 8px;
 }
 
-/* Profile Header Cart Button */
+/* Cart Header Button */
 .btn-profile-cart {
     display: inline-flex;
     align-items: center;
@@ -186,15 +174,15 @@
 .avatar-meta {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 }
 
 .avatar-tip {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
 }
 
-/* Banners */
+/* Alert Banners */
 .error-banner {
     padding: 12px 16px;
     border-radius: var(--radius-sm);
@@ -244,7 +232,7 @@
     margin: 2.2rem 0;
 }
 
-/* Form Layout & Inputs */
+/* Grid & Inputs */
 .form-grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -320,13 +308,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
-.input-wrap input:disabled {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.06);
-    color: #7d8f82;
-    cursor: not-allowed;
-}
-
 .input-hint {
     display: block;
     font-size: 0.74rem;
@@ -334,7 +315,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     margin-top: 5px;
 }
 
-/* Action Submit Buttons */
+/* Action Buttons */
 .btn-auth-submit {
     width: 100%;
     padding: 12px 20px;
@@ -418,7 +399,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     box-shadow: 0 4px 14px rgba(83, 169, 34, 0.25);
 }
 
-/* Bottom Danger Zone */
+/* Danger Zone */
 .profile-danger-zone {
     margin-top: 2rem;
     padding-top: 1.5rem;
