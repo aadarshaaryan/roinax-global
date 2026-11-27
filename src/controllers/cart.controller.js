@@ -3,6 +3,11 @@ import Razorpay from 'razorpay';
 import prisma from '../lib/prisma.js';
 import { sendOrderEmail } from '../lib/mailer.js';
 
+// Helper: Safely resolve userId across both session conventions
+const getSessionUserId = (req) => {
+    return req.session?.userId || req.session?.user?.id || null;
+};
+
 // Safe on-demand Razorpay instance with key sanitization
 const getRazorpayClient = () => {
     const rawKeyId = process.env.RAZORPAY_KEY_ID;
@@ -137,16 +142,29 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
 // GET /api/cart
 export const getCart = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
+
         if (userId) {
-            const cart = await prisma.cart.findUnique({
+            let cart = await prisma.cart.findUnique({
                 where: { userId },
                 include: { items: true }
             });
-            return res.status(200).json({ success: true, items: cart?.items || [] });
+
+            // Initialize cart if user has no cart row yet
+            if (!cart) {
+                cart = await prisma.cart.create({
+                    data: { userId },
+                    include: { items: true }
+                });
+            }
+
+            return res.status(200).json({ success: true, items: cart.items || [] });
         }
-        return res.status(200).json({ success: true, items: req.session.cart || [] });
+
+        const guestItems = req.session?.cart || [];
+        return res.status(200).json({ success: true, items: guestItems });
     } catch (error) {
+        console.error('Error in getCart:', error);
         return res.status(500).json({ success: false, message: 'Server error retrieving cart.' });
     }
 };
@@ -154,7 +172,7 @@ export const getCart = async (req, res) => {
 // POST /api/cart/add
 export const addCartItem = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         const { deviceId, name, price, quantity = 1 } = req.body;
         const itemPrice = Number(price);
         const itemQty = Number(quantity);
@@ -204,6 +222,7 @@ export const addCartItem = async (req, res) => {
 
         req.session.save(() => res.status(200).json({ success: true, items: req.session.cart }));
     } catch (error) {
+        console.error('Error in addCartItem:', error);
         return res.status(500).json({ success: false, message: 'Failed to add item.' });
     }
 };
@@ -211,7 +230,7 @@ export const addCartItem = async (req, res) => {
 // POST /api/cart/update-qty
 export const updateCartItemQty = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         const { deviceId, quantity } = req.body;
         const targetQty = Number(quantity);
 
@@ -239,6 +258,7 @@ export const updateCartItemQty = async (req, res) => {
         }
         req.session.save(() => res.status(200).json({ success: true }));
     } catch (error) {
+        console.error('Error in updateCartItemQty:', error);
         return res.status(500).json({ success: false, message: 'Update failed.' });
     }
 };
@@ -246,7 +266,7 @@ export const updateCartItemQty = async (req, res) => {
 // DELETE /api/cart/item/:deviceId
 export const removeCartItem = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         const { deviceId } = req.params;
 
         if (userId) {
@@ -264,6 +284,7 @@ export const removeCartItem = async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
+        console.error('Error in removeCartItem:', error);
         return res.status(500).json({ success: false, message: 'Removal failed.' });
     }
 };
@@ -271,7 +292,7 @@ export const removeCartItem = async (req, res) => {
 // DELETE /api/cart/clear
 export const clearCart = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         if (userId) {
             const cart = await prisma.cart.findUnique({ where: { userId } });
             if (cart) await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -279,6 +300,7 @@ export const clearCart = async (req, res) => {
         req.session.cart = [];
         req.session.save(() => res.status(200).json({ success: true }));
     } catch (error) {
+        console.error('Error in clearCart:', error);
         return res.status(500).json({ success: false, message: 'Failed to clear cart.' });
     }
 };
@@ -286,7 +308,7 @@ export const clearCart = async (req, res) => {
 // POST /api/cart/create-order
 export const createPaymentOrder = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         let cartItems = [];
 
         if (userId) {
@@ -304,7 +326,6 @@ export const createPaymentOrder = async (req, res) => {
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
-        // Razorpay amounts must strictly be an integer in paise
         const totalPaise = Math.round(grandTotal * 100);
 
         if (totalPaise <= 0) {
@@ -347,7 +368,7 @@ export const createPaymentOrder = async (req, res) => {
 // POST /api/cart/verify-payment
 export const verifyPaymentAndNotify = async (req, res) => {
     try {
-        const userId = req.session?.userId;
+        const userId = getSessionUserId(req);
         const {
             razorpay_order_id,
             razorpay_payment_id,
@@ -361,7 +382,6 @@ export const verifyPaymentAndNotify = async (req, res) => {
 
         const { key_secret } = getRazorpayClient();
 
-        // 1. Authenticate HMAC SHA256 Signature
         const body = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSignature = crypto
             .createHmac('sha256', key_secret)
@@ -373,7 +393,6 @@ export const verifyPaymentAndNotify = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Payment verification failed: invalid signature.' });
         }
 
-        // 2. Retrieve Items
         let cartItems = [];
         if (userId) {
             const cart = await prisma.cart.findUnique({ where: { userId }, include: { items: true } });
@@ -386,7 +405,6 @@ export const verifyPaymentAndNotify = async (req, res) => {
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
-        // 3. Dispatch separate notifications to customer and ADMIN_EMAIL
         await dispatchOrderReceipts({
             customerEmail: shippingData.email.trim().toLowerCase(),
             shippingData,
@@ -398,7 +416,6 @@ export const verifyPaymentAndNotify = async (req, res) => {
             orderId: razorpay_order_id
         });
 
-        // 4. Wipe Basket After Confirmed Payment
         if (userId) {
             const userCart = await prisma.cart.findUnique({ where: { userId } });
             if (userCart) await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });

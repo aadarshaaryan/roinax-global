@@ -615,7 +615,7 @@
 
     <!-- Server-Session Cart Script with Responsive Stepper Controls -->
     <script>
-        (function () {
+        document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('roinax_cart');
 
             async function fetchServerCartCount() {
@@ -648,21 +648,25 @@
                 const plusBtn = stepper.querySelector('.step-btn.plus');
                 const input = stepper.querySelector('.qty-input');
 
-                minusBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    let current = parseInt(input.value, 10) || 1;
-                    if (current > 1) {
-                        input.value = current - 1;
-                    }
-                });
+                if (minusBtn && input) {
+                    minusBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        let current = parseInt(input.value, 10) || 1;
+                        if (current > 1) {
+                            input.value = current - 1;
+                        }
+                    });
+                }
 
-                plusBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    let current = parseInt(input.value, 10) || 1;
-                    if (current < 100) {
-                        input.value = current + 1;
-                    }
-                });
+                if (plusBtn && input) {
+                    plusBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        let current = parseInt(input.value, 10) || 1;
+                        if (current < 100) {
+                            input.value = current + 1;
+                        }
+                    });
+                }
             });
 
             // Category Tabs Filtering
@@ -729,7 +733,6 @@
                 });
             });
 
-            document.addEventListener('DOMContentLoaded', fetchServerCartCount);
             fetchServerCartCount();
-        })();
+        });
     </script>
