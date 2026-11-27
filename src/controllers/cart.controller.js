@@ -3,7 +3,7 @@ import Razorpay from 'razorpay';
 import prisma from '../lib/prisma.js';
 import { sendOrderEmail } from '../lib/mailer.js';
 
-// Helper: Safely resolve userId across both session conventions
+// Helper: Resolve userId across Google OAuth and Local Session formats
 const getSessionUserId = (req) => {
     return req.session?.userId || req.session?.user?.id || null;
 };
@@ -14,7 +14,7 @@ const getRazorpayClient = () => {
     const rawSecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!rawKeyId || !rawSecret) {
-        throw new Error('Razorpay credentials missing. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.');
+        throw new Error('Razorpay credentials missing. Verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Render Environment.');
     }
 
     const key_id = String(rawKeyId).trim().replace(/^["']|["']$/g, '');
@@ -59,7 +59,7 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         </div>
     `;
 
-    // 1. Customer Email
+    // 1. Customer Receipt Email
     const customerHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
             <div style="border-bottom: 2px solid #53a922; padding-bottom: 12px; margin-bottom: 18px;">
@@ -89,12 +89,12 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
             </div>
 
             <p style="font-size: 0.8rem; color: #9ca3af; text-align: center; margin-top: 24px;">
-                If you have questions regarding shipment dispatch, contact us at ${adminEmail || 'support@roinax.com'}.
+                If you have questions regarding shipment dispatch, contact us at ${adminEmail || 'roinaxglobal@gmail.com'}.
             </p>
         </div>
     `;
 
-    // 2. Admin Alert Email
+    // 2. Store Owner / Admin Alert Email
     const adminHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
             <div style="border-bottom: 2px solid #53a922; padding-bottom: 12px; margin-bottom: 18px;">
@@ -122,6 +122,7 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         </div>
     `;
 
+    // Send customer receipt
     await sendOrderEmail({
         to: customerEmail,
         replyTo: adminEmail,
@@ -129,6 +130,7 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         html: customerHtml,
     });
 
+    // Send owner dispatch alert
     if (adminEmail) {
         await sendOrderEmail({
             to: adminEmail,
@@ -144,13 +146,13 @@ export const getCart = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
 
+        // 1. Authenticated User (Database)
         if (userId) {
             let cart = await prisma.cart.findUnique({
                 where: { userId },
                 include: { items: true }
             });
 
-            // Initialize cart if user has no cart row yet
             if (!cart) {
                 cart = await prisma.cart.create({
                     data: { userId },
@@ -158,13 +160,20 @@ export const getCart = async (req, res) => {
                 });
             }
 
-            return res.status(200).json({ success: true, items: cart.items || [] });
+            return res.status(200).json({
+                success: true,
+                items: cart.items || []
+            });
         }
 
-        const guestItems = req.session?.cart || [];
-        return res.status(200).json({ success: true, items: guestItems });
+        // 2. Guest User (Session Store)
+        const guestItems = Array.isArray(req.session?.cart) ? req.session.cart : [];
+        return res.status(200).json({
+            success: true,
+            items: guestItems
+        });
     } catch (error) {
-        console.error('Error in getCart:', error);
+        console.error('[CART_GET_ERROR]:', error);
         return res.status(500).json({ success: false, message: 'Server error retrieving cart.' });
     }
 };
@@ -174,13 +183,15 @@ export const addCartItem = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
         const { deviceId, name, price, quantity = 1 } = req.body;
-        const itemPrice = Number(price);
-        const itemQty = Number(quantity);
 
         if (!deviceId || !name || price === undefined) {
             return res.status(400).json({ success: false, message: 'Invalid product details.' });
         }
 
+        const itemPrice = parseFloat(price);
+        const itemQty = Math.max(1, parseInt(quantity, 10) || 1);
+
+        // A. Logged-in User (Supabase Postgres)
         if (userId) {
             const cart = await prisma.cart.upsert({
                 where: { userId },
@@ -189,7 +200,10 @@ export const addCartItem = async (req, res) => {
             });
 
             const existingItem = await prisma.cartItem.findFirst({
-                where: { cartId: cart.id, deviceId: String(deviceId) }
+                where: {
+                    cartId: cart.id,
+                    deviceId: String(deviceId)
+                }
             });
 
             let item;
@@ -203,27 +217,53 @@ export const addCartItem = async (req, res) => {
                     data: {
                         cartId: cart.id,
                         deviceId: String(deviceId),
+                        productId: String(deviceId),
                         name: String(name),
                         price: itemPrice,
                         quantity: itemQty
                     }
                 });
             }
-            return res.status(200).json({ success: true, item });
+
+            const updatedCart = await prisma.cart.findUnique({
+                where: { id: cart.id },
+                include: { items: true }
+            });
+
+            return res.status(200).json({
+                success: true,
+                items: updatedCart?.items || [item]
+            });
         }
 
-        if (!req.session.cart) req.session.cart = [];
+        // B. Guest User (Persist into PrismaSessionStore)
+        if (!Array.isArray(req.session.cart)) {
+            req.session.cart = [];
+        }
+
         const existingIndex = req.session.cart.findIndex(i => i.deviceId === String(deviceId));
         if (existingIndex > -1) {
             req.session.cart[existingIndex].quantity += itemQty;
         } else {
-            req.session.cart.push({ deviceId: String(deviceId), name: String(name), price: itemPrice, quantity: itemQty });
+            req.session.cart.push({
+                deviceId: String(deviceId),
+                name: String(name),
+                price: itemPrice,
+                quantity: itemQty
+            });
         }
 
-        req.session.save(() => res.status(200).json({ success: true, items: req.session.cart }));
+        req.session.save((err) => {
+            if (err) {
+                console.error('[GUEST_SESSION_SAVE_ERROR]:', err);
+                return res.status(500).json({ success: false, message: 'Could not persist basket.' });
+            }
+            return res.status(200).json({ success: true, items: req.session.cart });
+        });
+
     } catch (error) {
-        console.error('Error in addCartItem:', error);
-        return res.status(500).json({ success: false, message: 'Failed to add item.' });
+        console.error('[CART_ADD_ERROR]:', error);
+        return res.status(500).json({ success: false, message: 'Failed to add item to basket.' });
     }
 };
 
@@ -232,33 +272,45 @@ export const updateCartItemQty = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
         const { deviceId, quantity } = req.body;
-        const targetQty = Number(quantity);
+        const targetQty = parseInt(quantity, 10);
 
         if (userId) {
             const cart = await prisma.cart.findUnique({ where: { userId } });
             if (!cart) return res.status(404).json({ success: false, message: 'Cart not found' });
 
             if (targetQty <= 0) {
-                await prisma.cartItem.deleteMany({ where: { cartId: cart.id, deviceId: String(deviceId) } });
+                await prisma.cartItem.deleteMany({
+                    where: { cartId: cart.id, deviceId: String(deviceId) }
+                });
             } else {
-                const existing = await prisma.cartItem.findFirst({ where: { cartId: cart.id, deviceId: String(deviceId) } });
+                const existing = await prisma.cartItem.findFirst({
+                    where: { cartId: cart.id, deviceId: String(deviceId) }
+                });
                 if (existing) {
-                    await prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: targetQty } });
+                    await prisma.cartItem.update({
+                        where: { id: existing.id },
+                        data: { quantity: targetQty }
+                    });
                 }
             }
             return res.status(200).json({ success: true });
         }
 
-        if (!req.session.cart) req.session.cart = [];
+        if (!Array.isArray(req.session.cart)) req.session.cart = [];
+
         if (targetQty <= 0) {
             req.session.cart = req.session.cart.filter(i => i.deviceId !== String(deviceId));
         } else {
             const item = req.session.cart.find(i => i.deviceId === String(deviceId));
             if (item) item.quantity = targetQty;
         }
-        req.session.save(() => res.status(200).json({ success: true }));
+
+        req.session.save((err) => {
+            if (err) return res.status(500).json({ success: false });
+            return res.status(200).json({ success: true });
+        });
     } catch (error) {
-        console.error('Error in updateCartItemQty:', error);
+        console.error('[CART_UPDATE_QTY_ERROR]:', error);
         return res.status(500).json({ success: false, message: 'Update failed.' });
     }
 };
@@ -272,20 +324,25 @@ export const removeCartItem = async (req, res) => {
         if (userId) {
             const cart = await prisma.cart.findUnique({ where: { userId } });
             if (cart) {
-                await prisma.cartItem.deleteMany({ where: { cartId: cart.id, deviceId: String(deviceId) } });
+                await prisma.cartItem.deleteMany({
+                    where: { cartId: cart.id, deviceId: String(deviceId) }
+                });
             }
             return res.status(200).json({ success: true });
         }
 
-        if (req.session.cart) {
+        if (Array.isArray(req.session?.cart)) {
             req.session.cart = req.session.cart.filter(i => i.deviceId !== String(deviceId));
-            req.session.save(() => res.status(200).json({ success: true }));
+            req.session.save((err) => {
+                if (err) return res.status(500).json({ success: false });
+                return res.status(200).json({ success: true });
+            });
         } else {
-            res.status(200).json({ success: true });
+            return res.status(200).json({ success: true });
         }
     } catch (error) {
-        console.error('Error in removeCartItem:', error);
-        return res.status(500).json({ success: false, message: 'Removal failed.' });
+        console.error('[CART_REMOVE_ERROR]:', error);
+        return res.status(500).json({ success: false, message: 'Item removal failed.' });
     }
 };
 
@@ -293,15 +350,22 @@ export const removeCartItem = async (req, res) => {
 export const clearCart = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
+
         if (userId) {
             const cart = await prisma.cart.findUnique({ where: { userId } });
-            if (cart) await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+            if (cart) {
+                await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+            }
         }
+
         req.session.cart = [];
-        req.session.save(() => res.status(200).json({ success: true }));
+        req.session.save((err) => {
+            if (err) return res.status(500).json({ success: false });
+            return res.status(200).json({ success: true });
+        });
     } catch (error) {
-        console.error('Error in clearCart:', error);
-        return res.status(500).json({ success: false, message: 'Failed to clear cart.' });
+        console.error('[CART_CLEAR_ERROR]:', error);
+        return res.status(500).json({ success: false, message: 'Failed to clear basket.' });
     }
 };
 
@@ -312,7 +376,10 @@ export const createPaymentOrder = async (req, res) => {
         let cartItems = [];
 
         if (userId) {
-            const cart = await prisma.cart.findUnique({ where: { userId }, include: { items: true } });
+            const cart = await prisma.cart.findUnique({
+                where: { userId },
+                include: { items: true }
+            });
             cartItems = cart?.items || [];
         } else {
             cartItems = req.session.cart || [];
@@ -326,6 +393,7 @@ export const createPaymentOrder = async (req, res) => {
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
+        // Razorpay amounts must strictly be an integer in paise
         const totalPaise = Math.round(grandTotal * 100);
 
         if (totalPaise <= 0) {
@@ -348,14 +416,14 @@ export const createPaymentOrder = async (req, res) => {
             key: key_id
         });
     } catch (error) {
-        console.error('Razorpay Create Order Error:', {
+        console.error('[RAZORPAY_CREATE_ORDER_ERROR]:', {
             statusCode: error.statusCode,
             error: error.error,
             message: error.message
         });
 
         const clientMessage = error.statusCode === 401
-            ? 'Gateway Authentication Failed: Please check RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET.'
+            ? 'Gateway Authentication Failed: Please verify RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET.'
             : (error.error?.description || 'Could not initialize payment gateway.');
 
         return res.status(error.statusCode || 500).json({
@@ -382,6 +450,7 @@ export const verifyPaymentAndNotify = async (req, res) => {
 
         const { key_secret } = getRazorpayClient();
 
+        // 1. Authenticate HMAC SHA256 Signature
         const body = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSignature = crypto
             .createHmac('sha256', key_secret)
@@ -393,9 +462,13 @@ export const verifyPaymentAndNotify = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Payment verification failed: invalid signature.' });
         }
 
+        // 2. Retrieve Items
         let cartItems = [];
         if (userId) {
-            const cart = await prisma.cart.findUnique({ where: { userId }, include: { items: true } });
+            const cart = await prisma.cart.findUnique({
+                where: { userId },
+                include: { items: true }
+            });
             cartItems = cart?.items || [];
         } else {
             cartItems = req.session.cart || [];
@@ -405,6 +478,7 @@ export const verifyPaymentAndNotify = async (req, res) => {
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
+        // 3. Dispatch separate notifications to customer and ADMIN_EMAIL
         await dispatchOrderReceipts({
             customerEmail: shippingData.email.trim().toLowerCase(),
             shippingData,
@@ -416,16 +490,25 @@ export const verifyPaymentAndNotify = async (req, res) => {
             orderId: razorpay_order_id
         });
 
+        // 4. Wipe Basket After Confirmed Payment
         if (userId) {
             const userCart = await prisma.cart.findUnique({ where: { userId } });
-            if (userCart) await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
+            if (userCart) {
+                await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
+            }
         }
-        req.session.cart = [];
-        req.session.save();
 
-        return res.status(200).json({ success: true, message: 'Payment verified and receipts dispatched.' });
+        req.session.cart = [];
+        req.session.save((err) => {
+            if (err) console.error('[POST_PAY_SESSION_SAVE_ERROR]:', err);
+            return res.status(200).json({
+                success: true,
+                message: 'Payment verified and receipts dispatched.'
+            });
+        });
+
     } catch (error) {
-        console.error('Payment Verification Error:', error);
+        console.error('[PAYMENT_VERIFY_ERROR]:', error);
         return res.status(500).json({ success: false, message: 'Server error processing payment verification.' });
     }
 };
