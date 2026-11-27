@@ -1,292 +1,430 @@
-<section class="profile-section" style="padding: 120px 16px 60px;">
-  <div class="container" style="max-width: 680px; margin: 0 auto;">
-    <div class="auth-card">
+<main class="cart-page">
+    <div class="container">
+        <div class="cart-page-header">
+            <h1><i class="fa-solid fa-cart-shopping"></i> Review Your <span class="text-lime">Procurement Basket</span></h1>
+            <a href="/buy-now" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Continue Shopping</a>
+        </div>
 
-      <!-- Top Action Bar -->
-      <div class="brand-header">
-        <div class="brand-title-wrap">
-          <h2>My Profile</h2>
-          <span class="auth-tag">VERIFIED</span>
-        </div>
-        <div class="header-actions-group">
-          <a href="/cart" class="btn-profile-cart">
-            <i class="fa-solid fa-bag-shopping"></i> Cart
-            <% if (locals.cartCount && cartCount> 0) { %>
-              <span class="cart-pill-count">
-                <%= cartCount %>
-              </span>
-              <% } %>
-          </a>
-        </div>
-      </div>
-
-      <!-- Flash Notifications -->
-      <% if (locals.success_msg && success_msg.length> 0) { %>
-        <div class="error-banner success">
-          <i class="fa-solid fa-circle-check"></i>
-          <%= success_msg %>
-        </div>
-        <% } %>
-          <% if (locals.error_msg && error_msg.length> 0) { %>
-            <div class="error-banner error">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <%= error_msg %>
+        <div class="cart-layout-grid" id="cartLayoutGrid">
+            <!-- Items List -->
+            <div class="cart-table-card">
+                <div class="cart-card-header">
+                    <h2>Selected Devices & Hardware</h2>
+                    <button type="button" id="clearCartBtn" class="btn-clear-link">Clear Basket</button>
+                </div>
+                <div class="cart-items-container" id="cartItemsContainer">
+                    <!-- Populated dynamically via server -->
+                </div>
             </div>
-            <% } %>
 
-              <!-- Interactive Avatar Upload Section -->
-              <div class="profile-avatar-wrap">
-                <div class="avatar-preview-box" id="avatarPreviewContainer">
-                  <img id="avatarPreviewImg"
-                    src="<%= user.avatarUrl || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.firstName || user.email) %>"
-                    alt="Profile Avatar" />
-                  <label for="avatarFileInput" class="avatar-hover-overlay" title="Upload new photo">
-                    <i class="fa-solid fa-camera"></i>
-                  </label>
+            <!-- Order Summary & Checkout -->
+            <aside class="cart-checkout-card">
+                <h2>Procurement Summary</h2>
+                <div class="summary-line">
+                    <span>Devices Subtotal</span>
+                    <span id="summarySubtotal">₹0</span>
+                </div>
+                <div class="summary-line">
+                    <span>GST (18% Statutory)</span>
+                    <span id="summaryTax">₹0</span>
+                </div>
+                <div class="summary-line">
+                    <span>Courier / Dispatch</span>
+                    <span class="text-free">FREE</span>
+                </div>
+                <div class="summary-separator"></div>
+                <div class="summary-line total-line">
+                    <span>Total Amount</span>
+                    <span id="summaryGrandTotal">₹0</span>
                 </div>
 
-                <div class="avatar-meta">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <label for="avatarFileInput" class="btn-upload-avatar">
-                      <i class="fa-solid fa-cloud-arrow-up"></i> Change Photo
-                    </label>
-                    <span id="avatarUploadSpinner" style="display: none; color: var(--green-lime); font-size: 0.85rem;">
-                      <i class="fa-solid fa-spinner fa-spin"></i> Uploading...
-                    </span>
-                  </div>
-                  <span class="avatar-tip">JPG, PNG, or WEBP (Max 2MB). Auto-crops to 1:1.</span>
-                </div>
-              </div>
-
-              <!-- Hidden Form for Image Upload -->
-              <form id="avatarUploadForm" action="/profile/avatar" method="POST" enctype="multipart/form-data"
-                style="display: none;">
-                <input type="file" id="avatarFileInput" name="avatar"
-                  accept="image/png, image/jpeg, image/jpg, image/webp" />
-              </form>
-
-              <!-- SECTION 1: Personal Details Form -->
-              <form action="/profile/update" method="POST">
-                <div class="section-title-wrap">
-                  <h3>Personal Information</h3>
-                  <p class="section-sub-text">Update your identity and delivery preferences</p>
-                </div>
-
-                <div class="form-grid-2">
-                  <!-- First Name -->
-                  <div class="form-group">
-                    <label for="firstName">First Name</label>
-                    <div class="input-wrap">
-                      <i class="fa-solid fa-user input-icon"></i>
-                      <input type="text" id="firstName" name="firstName" value="<%= user.firstName || '' %>"
-                        placeholder="First name" required />
-                    </div>
-                  </div>
-
-                  <!-- Last Name -->
-                  <div class="form-group">
-                    <label for="lastName">Last Name</label>
-                    <div class="input-wrap">
-                      <i class="fa-solid fa-user input-icon"></i>
-                      <input type="text" id="lastName" name="lastName" value="<%= user.lastName || '' %>"
-                        placeholder="Last name" required />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Email Address (Uneditable / Readonly) -->
-                <div class="form-group">
-                  <label for="profileEmail">
-                    Email Address <span class="badge-locked"><i class="fa-solid fa-lock"></i> Permanent</span>
-                  </label>
-                  <div class="input-wrap input-readonly-wrap">
-                    <i class="fa-solid fa-envelope input-icon"></i>
-                    <input type="email" id="profileEmail" value="<%= user.email %>" readonly tabindex="-1"
-                      class="input-disabled" />
-                    <span class="input-lock-tag"><i class="fa-solid fa-shield-halved"></i> Verified</span>
-                  </div>
-                  <span class="input-hint">Your primary email is linked to account authentication and cannot be edited
-                    directly.</span>
-                </div>
-
-                <div class="form-grid-2">
-                  <!-- Date of Birth -->
-                  <div class="form-group">
-                    <label for="dob">Date of Birth</label>
-                    <div class="input-wrap">
-                      <i class="fa-solid fa-calendar-days input-icon"></i>
-                      <input type="date" id="dob" name="dob"
-                        value="<%= user.dob ? new Date(user.dob).toISOString().split('T')[0] : '' %>" />
-                    </div>
-                  </div>
-
-                  <!-- Gender -->
-                  <div class="form-group">
-                    <label for="gender">Gender</label>
-                    <div class="input-wrap">
-                      <i class="fa-solid fa-venus-mars input-icon"></i>
-                      <select id="gender" name="gender" class="custom-select-input">
-                        <option value="" disabled <%=!user.gender ? 'selected' : '' %>>Select Gender</option>
-                        <option value="Male" <%=user.gender==='Male' ? 'selected' : '' %>>Male</option>
-                        <option value="Female" <%=user.gender==='Female' ? 'selected' : '' %>>Female</option>
-                        <option value="Other" <%=user.gender==='Other' ? 'selected' : '' %>>Other</option>
-                        <option value="Prefer not to say" <%=user.gender==='Prefer not to say' ? 'selected' : '' %>
-                          >Prefer not to say</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Mobile No -->
-                <div class="form-group">
-                  <label for="phone">Mobile No.</label>
-                  <div class="input-wrap">
-                    <i class="fa-solid fa-phone input-icon"></i>
-                    <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" maxlength="10"
-                      value="<%= user.phone || '' %>" placeholder="10-digit mobile number" />
-                  </div>
-                  <span class="input-hint">Used for dispatch confirmations, order alerts, and hardware delivery.</span>
-                </div>
-
-                <button type="submit" class="btn-auth-submit">
-                  <i class="fa-solid fa-floppy-disk"></i> Save Personal Details
-                </button>
-              </form>
-
-              <hr class="profile-section-divider" />
-
-              <!-- SECTION 2: Session Security & Password Update -->
-              <div class="section-title-wrap">
-                <h3>Session Security</h3>
-                <p class="section-sub-text">Current authorization credentials and active tokens</p>
-              </div>
-
-              <div class="security-status-card">
-                <div class="session-indicator-dot"></div>
-                <div class="security-status-info">
-                  <p class="security-session-label">Active Connection</p>
-                  <p class="security-session-meta">
-                    Logged in via: <strong>
-                      <%= user.password ? 'Email & Password' : 'Google OAuth' %>
-                    </strong>
-                  </p>
-                </div>
-              </div>
-
-              <!-- Update Password Form -->
-              <form action="/profile/update-password" method="POST" class="password-update-form">
-                <h4 class="sub-form-heading"><i class="fa-solid fa-lock"></i> Update Password</h4>
-
-                <% if (user.password) { %>
-                  <div class="form-group">
-                    <label for="currentPassword">Current Password</label>
-                    <div class="input-wrap input-password-wrap">
-                      <i class="fa-solid fa-shield-halved input-icon"></i>
-                      <input type="password" id="currentPassword" name="currentPassword"
-                        placeholder="Enter current password" required autocomplete="current-password" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
-                        <i class="fa-solid fa-eye"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <% } %>
-
-                    <div class="form-grid-2">
-                      <div class="form-group">
-                        <label for="newPassword">New Password</label>
-                        <div class="input-wrap input-password-wrap">
-                          <i class="fa-solid fa-key input-icon"></i>
-                          <input type="password" id="newPassword" name="newPassword" placeholder="Minimum 8 characters"
-                            minlength="8" required autocomplete="new-password" />
-                          <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
-                        <div class="input-wrap input-password-wrap">
-                          <i class="fa-solid fa-check-double input-icon"></i>
-                          <input type="password" id="confirmPassword" name="confirmPassword"
-                            placeholder="Confirm new password" minlength="8" required autocomplete="new-password" />
-                          <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
-                            <i class="fa-solid fa-eye"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button type="submit" class="btn-auth-submit btn-secondary-submit">
-                      <i class="fa-solid fa-key"></i> Update Password
+                <div class="cart-cta-actions">
+                    <button type="button" id="openAddressModalBtn" class="btn btn-green btn-block">
+                        <i class="fa-solid fa-truck-fast"></i> Proceed to Buy (Enter Address)
                     </button>
-              </form>
-
-              <!-- Danger Zone -->
-              <div class="profile-danger-zone">
-                <div class="danger-info">
-                  <h4>Terminate Session</h4>
-                  <p>Sign out of your active browser session immediately.</p>
+                    <button type="button" id="whatsappInquiryBtn" class="btn btn-whatsapp-order btn-block">
+                        <i class="fa-brands fa-whatsapp"></i> Order on WhatsApp
+                    </button>
                 </div>
-                <form action="/api/auth/logout" method="POST" style="margin: 0;">
-                  <button type="submit" class="btn-danger-logout">
-                    <i class="fa-solid fa-power-off"></i> Sign Out
-                  </button>
-                </form>
-              </div>
+                <small class="secure-badge"><i class="fa-solid fa-shield-halved"></i> 256-Bit Encrypted Payment Processing</small>
+            </aside>
+        </div>
 
+        <!-- Empty Cart Display -->
+        <div class="empty-cart-state" id="emptyCartState" style="display: none;">
+            <i class="fa-solid fa-box-open"></i>
+            <h2>Your basket is empty</h2>
+            <p>Browse our catalog of biometric devices, MicroATMs, and RD licenses to build an order.</p>
+            <a href="/buy-now" class="btn btn-green">Browse Hardware Catalog</a>
+        </div>
     </div>
-  </div>
-</section>
+
+    <!-- Modal 1: Auth Gate (Guest Prompt) -->
+    <div class="custom-modal" id="authGateModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <button type="button" class="modal-close" data-close>&times;</button>
+            <div class="modal-icon-header"><i class="fa-solid fa-user-lock"></i></div>
+            <h3>Account Required to Complete Order</h3>
+            <p>Please log in or register before checking out with the payment gateway.</p>
+            <div class="modal-auth-actions">
+                <a href="/login" class="btn btn-outline-dark-sm btn-block">Sign In</a>
+                <a href="/signup" class="btn btn-green btn-block">Create New Account</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Delivery Address Form Modal -->
+    <div class="custom-modal" id="addressModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog billing-dialog">
+            <button type="button" class="modal-close" data-close>&times;</button>
+            <div class="modal-icon-header"><i class="fa-solid fa-location-dot"></i></div>
+            <h3>Delivery & Shipping Address</h3>
+            <p>Enter the destination where your hardware should be dispatched.</p>
+
+            <form id="shippingAddressForm">
+                <div class="billing-form-grid">
+                    <div class="form-group span-2">
+                        <label for="shipFullName">Full Name / Enterprise Name *</label>
+                        <input type="text" id="shipFullName" name="fullName" required placeholder="e.g. Radheshyam Kumar">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipEmail">Gmail / Email Address *</label>
+                        <input type="email" id="shipEmail" name="email" required placeholder="your.name@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipPhone">Delivery Contact Phone *</label>
+                        <input type="tel" id="shipPhone" name="phone" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit mobile number">
+                    </div>
+
+                    <div class="form-group span-2">
+                        <label for="shipAddress">Complete Delivery Address *</label>
+                        <input type="text" id="shipAddress" name="address" required placeholder="Shop/House No., Street, Landmark">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipCity">City *</label>
+                        <input type="text" id="shipCity" name="city" required placeholder="City">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipState">State *</label>
+                        <input type="text" id="shipState" name="state" required placeholder="State">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipPincode">PIN Code *</label>
+                        <input type="text" id="shipPincode" name="pincode" pattern="[0-9]{6}" maxlength="6" required placeholder="6-digit PIN">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="shipGstin">GSTIN (Optional)</label>
+                        <input type="text" id="shipGstin" name="gstin" placeholder="Optional GST number">
+                    </div>
+                </div>
+
+                <button type="submit" id="submitAddressBtn" class="btn btn-green btn-block" style="margin-top: 16px;">
+                    <i class="fa-solid fa-lock"></i> Proceed to Pay
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Payment Success Modal -->
+    <div class="custom-modal" id="orderSuccessModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog">
+            <button type="button" class="modal-close" data-close>&times;</button>
+            <div class="modal-icon-header" style="background: rgba(83, 169, 34, 0.2); color: #82d12b;">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3>Order & Payment Confirmed!</h3>
+            <p>Your transaction has been verified. The itemized invoice and delivery details have been emailed to your Gmail account and our dispatch desk.</p>
+            <a href="/buy-now" class="btn btn-green btn-block" style="margin-top: 15px;">Continue Shopping</a>
+        </div>
+    </div>
+</main>
+
+<!-- Load Razorpay Official SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.getElementById('avatarFileInput');
-    const form = document.getElementById('avatarUploadForm');
-    const previewImg = document.getElementById('avatarPreviewImg');
-    const spinner = document.getElementById('avatarUploadSpinner');
+    document.addEventListener('DOMContentLoaded', async () => {
+        let cartItems = [];
+        let currentUser = null;
 
-    if (fileInput && form) {
-      fileInput.addEventListener('change', () => {
-        const file = fileInput.files[0];
-        if (!file) return;
+        const container = document.getElementById('cartItemsContainer');
+        const layout = document.getElementById('cartLayoutGrid');
+        const emptyState = document.getElementById('emptyCartState');
 
-        if (file.size > 2 * 1024 * 1024) {
-          alert('Image size exceeds 2MB limit. Please select a smaller photo.');
-          fileInput.value = '';
-          return;
+        function formatINR(val) {
+            return '₹' + Number(val).toLocaleString('en-IN');
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (previewImg) previewImg.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        async function loadServerCart() {
+            try {
+                const authRes = await fetch('/api/auth/me');
+                const authData = await authRes.json();
+                if (authData.authenticated && authData.user) {
+                    currentUser = authData.user;
+                }
 
-        if (spinner) spinner.style.display = 'inline-block';
-        form.submit();
-      });
-    }
-  });
+                const cartRes = await fetch('/api/cart');
+                const cartData = await cartRes.json();
 
-  document.querySelectorAll('.password-toggle-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const wrap = btn.closest('.input-wrap');
-      const input = wrap.querySelector('input');
-      const icon = btn.querySelector('i');
+                if (cartRes.status === 401 || !cartData.success) {
+                    cartItems = [];
+                } else {
+                    cartItems = cartData.items || [];
+                }
 
-      if (!input) return;
+                renderCart();
+            } catch (err) {
+                console.error('Failed to load cart from server:', err);
+                cartItems = [];
+                renderCart();
+            }
+        }
 
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-      }
+        function renderCart() {
+            if (!cartItems || cartItems.length === 0) {
+                layout.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            layout.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            let html = '';
+            let subtotal = 0;
+
+            cartItems.forEach(item => {
+                const qty = item.quantity || 1;
+                const price = Number(item.price) || 0;
+                const rowTotal = price * qty;
+                subtotal += rowTotal;
+
+                html += `
+                <div class="cart-row" data-id="${item.deviceId}">
+                    <div class="row-info">
+                        <h4>${item.name}</h4>
+                        <span class="unit-price">${formatINR(price)} each</span>
+                    </div>
+                    <div class="row-controls">
+                        <div class="qty-control">
+                            <button type="button" class="qty-btn dec-btn" data-id="${item.deviceId}" data-qty="${qty}">-</button>
+                            <span class="qty-display">${qty}</span>
+                            <button type="button" class="qty-btn inc-btn" data-id="${item.deviceId}" data-qty="${qty}">+</button>
+                        </div>
+                        <div class="row-total">${formatINR(rowTotal)}</div>
+                        <button type="button" class="remove-btn" data-id="${item.deviceId}"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+
+            const tax = Math.round(subtotal * 0.18);
+            const grand = subtotal + tax;
+
+            document.getElementById('summarySubtotal').textContent = formatINR(subtotal);
+            document.getElementById('summaryTax').textContent = formatINR(tax);
+            document.getElementById('summaryGrandTotal').textContent = formatINR(grand);
+        }
+
+        container.addEventListener('click', async (e) => {
+            const dec = e.target.closest('.dec-btn');
+            const inc = e.target.closest('.inc-btn');
+            const rem = e.target.closest('.remove-btn');
+
+            if (dec) {
+                const deviceId = dec.dataset.id;
+                const currentQty = parseInt(dec.dataset.qty, 10);
+                await fetch('/api/cart/update-qty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, quantity: currentQty - 1 })
+                });
+                await loadServerCart();
+            } else if (inc) {
+                const deviceId = inc.dataset.id;
+                const currentQty = parseInt(inc.dataset.qty, 10);
+                await fetch('/api/cart/update-qty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, quantity: currentQty + 1 })
+                });
+                await loadServerCart();
+            } else if (rem) {
+                const deviceId = rem.dataset.id;
+                await fetch(`/api/cart/item/${deviceId}`, { method: 'DELETE' });
+                await loadServerCart();
+            }
+        });
+
+        document.getElementById('clearCartBtn').addEventListener('click', async () => {
+            if (confirm('Clear all devices from your basket?')) {
+                await fetch('/api/cart/clear', { method: 'DELETE' });
+                await loadServerCart();
+            }
+        });
+
+        const authModal = document.getElementById('authGateModal');
+        const addressModal = document.getElementById('addressModal');
+        const orderSuccessModal = document.getElementById('orderSuccessModal');
+
+        function openModal(m) {
+            m.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(m) {
+            m.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('[data-close]').forEach(b => {
+            b.addEventListener('click', () => closeModal(b.closest('.custom-modal')));
+        });
+
+        document.querySelectorAll('.modal-backdrop').forEach(bg => {
+            bg.addEventListener('click', () => closeModal(bg.closest('.custom-modal')));
+        });
+
+        // 1. Click "Proceed to Buy" -> Prompt for Address
+        const openAddressBtn = document.getElementById('openAddressModalBtn');
+        if (openAddressBtn) {
+            openAddressBtn.addEventListener('click', () => {
+                if (!cartItems || cartItems.length === 0) return;
+
+                if (!currentUser) {
+                    openModal(authModal);
+                    return;
+                }
+
+                // Prefill user details if available
+                if (currentUser) {
+                    const fullName = (currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}` : currentUser.name) || '';
+                    document.getElementById('shipFullName').value = fullName.trim();
+                    document.getElementById('shipEmail').value = currentUser.email || '';
+                    if (currentUser.phone) document.getElementById('shipPhone').value = currentUser.phone;
+                }
+
+                openModal(addressModal);
+            });
+        }
+
+        // 2. Submit Address & Open Razorpay
+        const shippingForm = document.getElementById('shippingAddressForm');
+        shippingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitAddressBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing Gateway Session...';
+
+            const formData = new FormData(shippingForm);
+            const shippingData = Object.fromEntries(formData.entries());
+
+            try {
+                // Initialize Razorpay Order
+                const orderRes = await fetch('/api/cart/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const orderData = await orderRes.json();
+
+                if (!orderRes.ok || !orderData.success) {
+                    alert(orderData.message || 'Could not connect to payment gateway. Please retry.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+                    return;
+                }
+
+                closeModal(addressModal);
+
+                // Configure Razorpay Options
+                const options = {
+                    key: orderData.key,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'ROINAX Global',
+                    description: 'Hardware Order & Delivery',
+                    image: '/assets/images/logo.png',
+                    order_id: orderData.orderId,
+                    prefill: {
+                        name: shippingData.fullName,
+                        email: shippingData.email,
+                        contact: shippingData.phone
+                    },
+                    theme: {
+                        color: '#53a922'
+                    },
+                    handler: async function (response) {
+                        // Verify Signature & Trigger Dual Email Dispatch
+                        const verifyRes = await fetch('/api/cart/verify-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                shippingData: shippingData
+                            })
+                        });
+
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyRes.ok && verifyData.success) {
+                            openModal(orderSuccessModal);
+                            await loadServerCart();
+                        } else {
+                            alert(verifyData.message || 'Verification issue. Please contact support.');
+                        }
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('Connection failure while initiating checkout.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+            }
+        });
+
+        // WhatsApp inquiry fallback
+        document.getElementById('whatsappInquiryBtn').addEventListener('click', () => {
+            let text = "*HARDWARE INQUIRY*%0A%0A";
+            if (currentUser) text += `*Customer:* ${currentUser.name || currentUser.firstName || 'User'}%0A*Email:* ${currentUser.email}%0A%0A`;
+            text += "*Items:*%0A";
+
+            let sub = 0;
+            cartItems.forEach((item, i) => {
+                const qty = item.quantity || 1;
+                const t = Number(item.price) * qty;
+                sub += t;
+                text += `${i + 1}. ${item.name} (x${qty}) - ₹${t.toLocaleString('en-IN')}%0A`;
+            });
+
+            const grand = sub + Math.round(sub * 0.18);
+            text += `%0A*Grand Total (incl 18% GST):* ₹${grand.toLocaleString('en-IN')}%0A`;
+
+            window.open(`https://wa.me/917318692999?text=${text}`, '_blank');
+        });
+
+        loadServerCart();
     });
-  });
 </script>
