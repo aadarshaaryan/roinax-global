@@ -42,9 +42,6 @@
                     <button type="button" id="openAddressModalBtn" class="btn btn-green btn-block">
                         <i class="fa-solid fa-truck-fast"></i> Proceed to Buy (Enter Address)
                     </button>
-                    <button type="button" id="whatsappInquiryBtn" class="btn btn-whatsapp-order btn-block">
-                        <i class="fa-brands fa-whatsapp"></i> Order on WhatsApp
-                    </button>
                 </div>
                 <small class="secure-badge"><i class="fa-solid fa-shield-halved"></i> 256-Bit Encrypted Payment Processing</small>
             </aside>
@@ -405,26 +402,5 @@
             }
         });
 
-        // WhatsApp inquiry fallback
-        document.getElementById('whatsappInquiryBtn').addEventListener('click', () => {
-            let text = "*HARDWARE INQUIRY*%0A%0A";
-            if (currentUser) text += `*Customer:* ${currentUser.name || currentUser.firstName || 'User'}%0A*Email:* ${currentUser.email}%0A%0A`;
-            text += "*Items:*%0A";
-
-            let sub = 0;
-            cartItems.forEach((item, i) => {
-                const qty = item.quantity || 1;
-                const t = Number(item.price) * qty;
-                sub += t;
-                text += `${i + 1}. ${item.name} (x${qty}) - ₹${t.toLocaleString('en-IN')}%0A`;
-            });
-
-            const grand = sub + Math.round(sub * 0.18);
-            text += `%0A*Grand Total (incl 18% GST):* ₹${grand.toLocaleString('en-IN')}%0A`;
-
-            window.open(`https://wa.me/917318692999?text=${text}`, '_blank');
-        });
-
-        loadServerCart();
     });
 </script>

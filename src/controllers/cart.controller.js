@@ -3,12 +3,26 @@ import Razorpay from 'razorpay';
 import prisma from '../lib/prisma.js';
 import { sendOrderEmail } from '../lib/mailer.js';
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Safe on-demand Razorpay instance with key sanitization
+const getRazorpayClient = () => {
+    const rawKeyId = process.env.RAZORPAY_KEY_ID;
+    const rawSecret = process.env.RAZORPAY_KEY_SECRET;
 
-// Helper: Format & dispatch twin emails
+    if (!rawKeyId || !rawSecret) {
+        throw new Error('Razorpay credentials missing. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment variables.');
+    }
+
+    const key_id = String(rawKeyId).trim().replace(/^["']|["']$/g, '');
+    const key_secret = String(rawSecret).trim().replace(/^["']|["']$/g, '');
+
+    return {
+        instance: new Razorpay({ key_id, key_secret }),
+        key_id,
+        key_secret
+    };
+};
+
+// Helper: Format & dispatch twin emails via Gmail REST API
 const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, grandTotal, subtotal, tax, paymentId, orderId }) => {
     const adminEmail = process.env.ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || process.env.GMAIL_USER;
 
@@ -40,7 +54,7 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         </div>
     `;
 
-    // 1. Email for the Customer
+    // 1. Customer Email
     const customerHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
             <div style="border-bottom: 2px solid #53a922; padding-bottom: 12px; margin-bottom: 18px;">
@@ -70,12 +84,12 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
             </div>
 
             <p style="font-size: 0.8rem; color: #9ca3af; text-align: center; margin-top: 24px;">
-                If you have questions regarding shipment dispatch, contact us at dev.aadarshaaryan@gmail.com
+                If you have questions regarding shipment dispatch, contact us at ${adminEmail || 'support@roinax.com'}.
             </p>
         </div>
     `;
 
-    // 2. Email for the Store Owner (ADMIN_EMAIL)
+    // 2. Admin Alert Email
     const adminHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
             <div style="border-bottom: 2px solid #53a922; padding-bottom: 12px; margin-bottom: 18px;">
@@ -103,7 +117,6 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         </div>
     `;
 
-    // Fire both emails via Gmail REST API
     await sendOrderEmail({
         to: customerEmail,
         replyTo: adminEmail,
@@ -145,6 +158,10 @@ export const addCartItem = async (req, res) => {
         const { deviceId, name, price, quantity = 1 } = req.body;
         const itemPrice = Number(price);
         const itemQty = Number(quantity);
+
+        if (!deviceId || !name || price === undefined) {
+            return res.status(400).json({ success: false, message: 'Invalid product details.' });
+        }
 
         if (userId) {
             const cart = await prisma.cart.upsert({
@@ -280,15 +297,24 @@ export const createPaymentOrder = async (req, res) => {
         }
 
         if (cartItems.length === 0) {
-            return res.status(400).json({ success: false, message: 'Cart is empty.' });
+            return res.status(400).json({ success: false, message: 'Your basket is currently empty.' });
         }
 
         const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) * (item.quantity || 1)), 0);
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
+        // Razorpay amounts must strictly be an integer in paise
+        const totalPaise = Math.round(grandTotal * 100);
+
+        if (totalPaise <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid payment amount.' });
+        }
+
+        const { instance: razorpay, key_id } = getRazorpayClient();
+
         const razorpayOrder = await razorpay.orders.create({
-            amount: grandTotal * 100, // paise
+            amount: totalPaise,
             currency: 'INR',
             receipt: `rcpt_${Date.now().toString().slice(-8)}`,
         });
@@ -298,11 +324,23 @@ export const createPaymentOrder = async (req, res) => {
             orderId: razorpayOrder.id,
             amount: razorpayOrder.amount,
             currency: razorpayOrder.currency,
-            key: process.env.RAZORPAY_KEY_ID
+            key: key_id
         });
     } catch (error) {
-        console.error('Razorpay Create Order Error:', error);
-        return res.status(500).json({ success: false, message: 'Could not initialize payment gateway.' });
+        console.error('Razorpay Create Order Error:', {
+            statusCode: error.statusCode,
+            error: error.error,
+            message: error.message
+        });
+
+        const clientMessage = error.statusCode === 401
+            ? 'Gateway Authentication Failed: Please check RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET.'
+            : (error.error?.description || 'Could not initialize payment gateway.');
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: clientMessage
+        });
     }
 };
 
@@ -318,17 +356,20 @@ export const verifyPaymentAndNotify = async (req, res) => {
         } = req.body;
 
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !shippingData) {
-            return res.status(400).json({ success: false, message: 'Missing payment parameters.' });
+            return res.status(400).json({ success: false, message: 'Missing payment verification parameters.' });
         }
 
-        // 1. Authenticate Razorpay HMAC Signature
+        const { key_secret } = getRazorpayClient();
+
+        // 1. Authenticate HMAC SHA256 Signature
         const body = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .createHmac('sha256', key_secret)
             .update(body)
             .digest('hex');
 
         if (expectedSignature !== razorpay_signature) {
+            console.error('[SECURITY_ALERT] Invalid signature detected for payment:', razorpay_payment_id);
             return res.status(400).json({ success: false, message: 'Payment verification failed: invalid signature.' });
         }
 
@@ -345,7 +386,7 @@ export const verifyPaymentAndNotify = async (req, res) => {
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
-        // 3. Dispatch Emails to both customer and admin
+        // 3. Dispatch separate notifications to customer and ADMIN_EMAIL
         await dispatchOrderReceipts({
             customerEmail: shippingData.email.trim().toLowerCase(),
             shippingData,
@@ -357,7 +398,7 @@ export const verifyPaymentAndNotify = async (req, res) => {
             orderId: razorpay_order_id
         });
 
-        // 4. Empty Cart
+        // 4. Wipe Basket After Confirmed Payment
         if (userId) {
             const userCart = await prisma.cart.findUnique({ where: { userId } });
             if (userCart) await prisma.cartItem.deleteMany({ where: { cartId: userCart.id } });
@@ -365,9 +406,9 @@ export const verifyPaymentAndNotify = async (req, res) => {
         req.session.cart = [];
         req.session.save();
 
-        return res.status(200).json({ success: true, message: 'Payment confirmed.' });
+        return res.status(200).json({ success: true, message: 'Payment verified and receipts dispatched.' });
     } catch (error) {
         console.error('Payment Verification Error:', error);
-        return res.status(500).json({ success: false, message: 'Server error processing payment.' });
+        return res.status(500).json({ success: false, message: 'Server error processing payment verification.' });
     }
 };
