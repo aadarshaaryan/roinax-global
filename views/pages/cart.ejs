@@ -148,6 +148,9 @@
 <!-- Load Razorpay Official SDK -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
+<!-- Load Razorpay Official SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', async () => {
         let cartItems = [];
@@ -158,35 +161,46 @@
         const emptyState = document.getElementById('emptyCartState');
 
         function formatINR(val) {
-            return '₹' + Number(val).toLocaleString('en-IN');
+            return '₹' + Number(val || 0).toLocaleString('en-IN');
         }
 
-        async function loadServerCart() {
-            try {
-                const authRes = await fetch('/api/auth/me');
+        // 1. Independent Auth Fetch (Does NOT block Cart Fetch if not logged in)
+        try {
+            const authRes = await fetch('/api/auth/me');
+            if (authRes.ok) {
                 const authData = await authRes.json();
-                if (authData.authenticated && authData.user) {
+                if (authData.success && authData.user) {
+                    currentUser = authData.user;
+                } else if (authData.authenticated && authData.user) {
                     currentUser = authData.user;
                 }
+            }
+        } catch (e) {
+            console.warn('[Cart Auth Check]: Guest mode or endpoint unreached', e);
+        }
 
+        // 2. Load Cart
+        async function loadServerCart() {
+            try {
                 const cartRes = await fetch('/api/cart');
                 const cartData = await cartRes.json();
 
-                if (cartRes.status === 401 || !cartData.success) {
-                    cartItems = [];
+                if (cartData && cartData.success && Array.isArray(cartData.items)) {
+                    cartItems = cartData.items;
                 } else {
-                    cartItems = cartData.items || [];
+                    cartItems = [];
                 }
-
-                renderCart();
             } catch (err) {
                 console.error('Failed to load cart from server:', err);
                 cartItems = [];
-                renderCart();
             }
+            renderCart();
         }
 
+        // 3. Render Cart Items
         function renderCart() {
+            if (!container || !layout || !emptyState) return;
+
             if (!cartItems || cartItems.length === 0) {
                 layout.style.display = 'none';
                 emptyState.style.display = 'block';
@@ -200,7 +214,7 @@
             let subtotal = 0;
 
             cartItems.forEach(item => {
-                const qty = item.quantity || 1;
+                const qty = parseInt(item.quantity, 10) || 1;
                 const price = Number(item.price) || 0;
                 const rowTotal = price * qty;
                 subtotal += rowTotal;
@@ -208,7 +222,7 @@
                 html += `
                 <div class="cart-row" data-id="${item.deviceId}">
                     <div class="row-info">
-                        <h4>${item.name}</h4>
+                        <h4>${item.name || 'Hardware Device'}</h4>
                         <span class="unit-price">${formatINR(price)} each</span>
                     </div>
                     <div class="row-controls">
@@ -218,7 +232,9 @@
                             <button type="button" class="qty-btn inc-btn" data-id="${item.deviceId}" data-qty="${qty}">+</button>
                         </div>
                         <div class="row-total">${formatINR(rowTotal)}</div>
-                        <button type="button" class="remove-btn" data-id="${item.deviceId}"><i class="fa-solid fa-trash"></i></button>
+                        <button type="button" class="remove-btn" data-id="${item.deviceId}" title="Remove item">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>`;
             });
@@ -228,11 +244,16 @@
             const tax = Math.round(subtotal * 0.18);
             const grand = subtotal + tax;
 
-            document.getElementById('summarySubtotal').textContent = formatINR(subtotal);
-            document.getElementById('summaryTax').textContent = formatINR(tax);
-            document.getElementById('summaryGrandTotal').textContent = formatINR(grand);
+            const subEl = document.getElementById('summarySubtotal');
+            const taxEl = document.getElementById('summaryTax');
+            const grandEl = document.getElementById('summaryGrandTotal');
+
+            if (subEl) subEl.textContent = formatINR(subtotal);
+            if (taxEl) taxEl.textContent = formatINR(tax);
+            if (grandEl) grandEl.textContent = formatINR(grand);
         }
 
+        // Event delegation for Quantity Adjustments & Removal
         container.addEventListener('click', async (e) => {
             const dec = e.target.closest('.dec-btn');
             const inc = e.target.closest('.inc-btn');
@@ -263,22 +284,29 @@
             }
         });
 
-        document.getElementById('clearCartBtn').addEventListener('click', async () => {
-            if (confirm('Clear all devices from your basket?')) {
-                await fetch('/api/cart/clear', { method: 'DELETE' });
-                await loadServerCart();
-            }
-        });
+        // Clear Basket
+        const clearBtn = document.getElementById('clearCartBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async () => {
+                if (confirm('Clear all devices from your basket?')) {
+                    await fetch('/api/cart/clear', { method: 'DELETE' });
+                    await loadServerCart();
+                }
+            });
+        }
 
+        // Modals
         const authModal = document.getElementById('authGateModal');
         const addressModal = document.getElementById('addressModal');
         const orderSuccessModal = document.getElementById('orderSuccessModal');
 
         function openModal(m) {
+            if (!m) return;
             m.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
         function closeModal(m) {
+            if (!m) return;
             m.classList.remove('active');
             document.body.style.overflow = '';
         }
@@ -291,7 +319,7 @@
             bg.addEventListener('click', () => closeModal(bg.closest('.custom-modal')));
         });
 
-        // 1. Click "Proceed to Buy" -> Prompt for Address
+        // Step 1: Click "Proceed to Buy" -> Delivery Address Prompt
         const openAddressBtn = document.getElementById('openAddressModalBtn');
         if (openAddressBtn) {
             openAddressBtn.addEventListener('click', () => {
@@ -302,105 +330,109 @@
                     return;
                 }
 
-                // Prefill user details if available
                 if (currentUser) {
                     const fullName = (currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}` : currentUser.name) || '';
-                    document.getElementById('shipFullName').value = fullName.trim();
-                    document.getElementById('shipEmail').value = currentUser.email || '';
-                    if (currentUser.phone) document.getElementById('shipPhone').value = currentUser.phone;
+                    const fnInput = document.getElementById('shipFullName');
+                    const emInput = document.getElementById('shipEmail');
+                    const phInput = document.getElementById('shipPhone');
+
+                    if (fnInput) fnInput.value = fullName.trim();
+                    if (emInput) emInput.value = currentUser.email || '';
+                    if (phInput && currentUser.phone) phInput.value = currentUser.phone;
                 }
 
                 openModal(addressModal);
             });
         }
 
-        // 2. Submit Address & Open Razorpay
+        // Step 2: Submit Address -> Trigger Razorpay Gateway
         const shippingForm = document.getElementById('shippingAddressForm');
-        shippingForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        if (shippingForm) {
+            shippingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            const submitBtn = document.getElementById('submitAddressBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing Gateway Session...';
+                const submitBtn = document.getElementById('submitAddressBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing Payment Gateway...';
 
-            const formData = new FormData(shippingForm);
-            const shippingData = Object.fromEntries(formData.entries());
+                const formData = new FormData(shippingForm);
+                const shippingData = Object.fromEntries(formData.entries());
 
-            try {
-                // Initialize Razorpay Order
-                const orderRes = await fetch('/api/cart/create-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const orderData = await orderRes.json();
+                try {
+                    const orderRes = await fetch('/api/cart/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const orderData = await orderRes.json();
 
-                if (!orderRes.ok || !orderData.success) {
-                    alert(orderData.message || 'Could not connect to payment gateway. Please retry.');
+                    if (!orderRes.ok || !orderData.success) {
+                        alert(orderData.message || 'Could not connect to payment gateway. Please retry.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+                        return;
+                    }
+
+                    closeModal(addressModal);
+
+                    const options = {
+                        key: orderData.key,
+                        amount: orderData.amount,
+                        currency: orderData.currency,
+                        name: 'ROINAX Global',
+                        description: 'Enterprise Hardware Procurement',
+                        image: '/assets/images/logo.png',
+                        order_id: orderData.orderId,
+                        prefill: {
+                            name: shippingData.fullName,
+                            email: shippingData.email,
+                            contact: shippingData.phone
+                        },
+                        theme: {
+                            color: '#53a922'
+                        },
+                        handler: async function (response) {
+                            const verifyRes = await fetch('/api/cart/verify-payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    shippingData: shippingData
+                                })
+                            });
+
+                            const verifyData = await verifyRes.json();
+
+                            if (verifyRes.ok && verifyData.success) {
+                                openModal(orderSuccessModal);
+                                await loadServerCart();
+                            } else {
+                                alert(verifyData.message || 'Verification issue. Please contact support.');
+                            }
+                        },
+                        modal: {
+                            ondismiss: function () {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+                            }
+                        }
+                    };
+
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+
+                } catch (err) {
+                    console.error('Checkout error:', err);
+                    alert('Connection failure while initiating checkout.');
+                } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
-                    return;
                 }
+            });
+        }
 
-                closeModal(addressModal);
-
-                // Configure Razorpay Options
-                const options = {
-                    key: orderData.key,
-                    amount: orderData.amount,
-                    currency: orderData.currency,
-                    name: 'ROINAX Global',
-                    description: 'Hardware Order & Delivery',
-                    image: '/assets/images/logo.png',
-                    order_id: orderData.orderId,
-                    prefill: {
-                        name: shippingData.fullName,
-                        email: shippingData.email,
-                        contact: shippingData.phone
-                    },
-                    theme: {
-                        color: '#53a922'
-                    },
-                    handler: async function (response) {
-                        // Verify Signature & Trigger Dual Email Dispatch
-                        const verifyRes = await fetch('/api/cart/verify-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                shippingData: shippingData
-                            })
-                        });
-
-                        const verifyData = await verifyRes.json();
-
-                        if (verifyRes.ok && verifyData.success) {
-                            openModal(orderSuccessModal);
-                            await loadServerCart();
-                        } else {
-                            alert(verifyData.message || 'Verification issue. Please contact support.');
-                        }
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
-                        }
-                    }
-                };
-
-                const rzp = new Razorpay(options);
-                rzp.open();
-
-            } catch (err) {
-                console.error('Checkout error:', err);
-                alert('Connection failure while initiating checkout.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
-            }
-        });
-
+        // Initialize Cart Display
+        await loadServerCart();
     });
 </script>
