@@ -39,14 +39,14 @@
                 </div>
 
                 <div class="cart-cta-actions">
-                    <button type="button" id="openPayQrBtn" class="btn btn-green btn-block">
-                        <i class="fa-solid fa-qrcode"></i> Pay via UPI QR Code
+                    <button type="button" id="openAddressModalBtn" class="btn btn-green btn-block">
+                        <i class="fa-solid fa-truck-fast"></i> Proceed to Buy (Enter Address)
                     </button>
                     <button type="button" id="whatsappInquiryBtn" class="btn btn-whatsapp-order btn-block">
                         <i class="fa-brands fa-whatsapp"></i> Order on WhatsApp
                     </button>
                 </div>
-                <small class="secure-badge"><i class="fa-solid fa-lock"></i> Direct Merchant UPI Verification</small>
+                <small class="secure-badge"><i class="fa-solid fa-shield-halved"></i> 256-Bit Encrypted Payment Processing</small>
             </aside>
         </div>
 
@@ -59,14 +59,14 @@
         </div>
     </div>
 
-    <!-- Modal 1: Auth Gate (Guest prompt) -->
+    <!-- Modal 1: Auth Gate (Guest Prompt) -->
     <div class="custom-modal" id="authGateModal">
         <div class="modal-backdrop"></div>
         <div class="modal-dialog">
             <button type="button" class="modal-close" data-close>&times;</button>
             <div class="modal-icon-header"><i class="fa-solid fa-user-lock"></i></div>
             <h3>Account Required to Complete Order</h3>
-            <p>Please log in or register your enterprise profile before checking out with a payment QR code.</p>
+            <p>Please log in or register before checking out with the payment gateway.</p>
             <div class="modal-auth-actions">
                 <a href="/login" class="btn btn-outline-dark-sm btn-block">Sign In</a>
                 <a href="/signup" class="btn btn-green btn-block">Create New Account</a>
@@ -74,112 +74,87 @@
         </div>
     </div>
 
-    <!-- Modal 2: Billing Information Form -->
-    <div class="custom-modal" id="billingModal">
+    <!-- Modal 2: Delivery Address Form Modal -->
+    <div class="custom-modal" id="addressModal">
         <div class="modal-backdrop"></div>
         <div class="modal-dialog billing-dialog">
             <button type="button" class="modal-close" data-close>&times;</button>
-            <div class="modal-icon-header"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-            <h3>Billing Information</h3>
-            <p>Provide delivery and tax details. A formal invoice copy will be emailed upon confirmation.</p>
+            <div class="modal-icon-header"><i class="fa-solid fa-location-dot"></i></div>
+            <h3>Delivery & Shipping Address</h3>
+            <p>Enter the destination where your hardware should be dispatched.</p>
 
-            <form id="billingForm">
+            <form id="shippingAddressForm">
                 <div class="billing-form-grid">
                     <div class="form-group span-2">
-                        <label for="billFullName">Full Name / Business Name *</label>
-                        <input type="text" id="billFullName" name="fullName" required placeholder="e.g. John Doe / Radhe Electronics">
+                        <label for="shipFullName">Full Name / Enterprise Name *</label>
+                        <input type="text" id="shipFullName" name="fullName" required placeholder="e.g. Radheshyam Kumar">
                     </div>
 
                     <div class="form-group">
-                        <label for="billEmail">Email Address *</label>
-                        <input type="email" id="billEmail" name="email" required placeholder="name@domain.com">
+                        <label for="shipEmail">Gmail / Email Address *</label>
+                        <input type="email" id="shipEmail" name="email" required placeholder="your.name@gmail.com">
                     </div>
 
                     <div class="form-group">
-                        <label for="billPhone">Mobile Number *</label>
-                        <input type="tel" id="billPhone" name="phone" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit number">
+                        <label for="shipPhone">Delivery Contact Phone *</label>
+                        <input type="tel" id="shipPhone" name="phone" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit mobile number">
                     </div>
 
                     <div class="form-group span-2">
-                        <label for="billAddress">Street Delivery Address *</label>
-                        <input type="text" id="billAddress" name="address" required placeholder="House/Shop No., Landmark, Area">
+                        <label for="shipAddress">Complete Delivery Address *</label>
+                        <input type="text" id="shipAddress" name="address" required placeholder="Shop/House No., Street, Landmark">
                     </div>
 
                     <div class="form-group">
-                        <label for="billCity">City *</label>
-                        <input type="text" id="billCity" name="city" required placeholder="City">
+                        <label for="shipCity">City *</label>
+                        <input type="text" id="shipCity" name="city" required placeholder="City">
                     </div>
 
                     <div class="form-group">
-                        <label for="billState">State *</label>
-                        <input type="text" id="billState" name="state" required placeholder="State">
+                        <label for="shipState">State *</label>
+                        <input type="text" id="shipState" name="state" required placeholder="State">
                     </div>
 
                     <div class="form-group">
-                        <label for="billPincode">PIN Code *</label>
-                        <input type="text" id="billPincode" name="pincode" pattern="[0-9]{6}" maxlength="6" required placeholder="6-digit PIN">
+                        <label for="shipPincode">PIN Code *</label>
+                        <input type="text" id="shipPincode" name="pincode" pattern="[0-9]{6}" maxlength="6" required placeholder="6-digit PIN">
                     </div>
 
                     <div class="form-group">
-                        <label for="billGstin">GSTIN (Optional)</label>
-                        <input type="text" id="billGstin" name="gstin" placeholder="22AAAAA0000A1Z5">
+                        <label for="shipGstin">GSTIN (Optional)</label>
+                        <input type="text" id="shipGstin" name="gstin" placeholder="Optional GST number">
                     </div>
                 </div>
 
-                <button type="submit" id="submitBillingBtn" class="btn btn-green btn-block" style="margin-top: 14px;">
-                    <i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment
+                <button type="submit" id="submitAddressBtn" class="btn btn-green btn-block" style="margin-top: 16px;">
+                    <i class="fa-solid fa-lock"></i> Proceed to Pay
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Modal 3: Merchant UPI QR Code Checkout -->
-    <div class="custom-modal" id="qrModal">
+    <!-- Modal 3: Payment Success Modal -->
+    <div class="custom-modal" id="orderSuccessModal">
         <div class="modal-backdrop"></div>
-        <div class="modal-dialog qr-dialog">
+        <div class="modal-dialog">
             <button type="button" class="modal-close" data-close>&times;</button>
-            <div class="qr-header">
-                <h3>Scan & Pay via UPI</h3>
-                <p>Compatible with PhonePe, Paytm, Google Pay, BHIM & Samsung Wallet.</p>
+            <div class="modal-icon-header" style="background: rgba(83, 169, 34, 0.2); color: #82d12b;">
+                <i class="fa-solid fa-circle-check"></i>
             </div>
-
-            <div class="qr-box">
-                <div class="qr-img-wrapper" style="background: #ffffff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 12px;">
-                    <img id="qrImage" src="/assets/images/qr.jpeg" alt="Samsung Wallet UPI QR Code" class="qr-image"
-                        style="width: 230px; height: auto; display: block; margin: 0 auto;"
-                        onerror="this.src='/assets/images/qr.jpg'">
-                </div>
-                <div class="qr-amount-pill">
-                    Payable Amount: <strong id="qrTotalDisplay">₹0</strong>
-                </div>
-                <div class="upi-id-box" style="margin-top: 10px; line-height: 1.5;">
-                    <div>Beneficiary: <strong>WASIM KARIM</strong></div>
-                    <div>UPI ID: <strong style="color: #82d12b;">rxw@pingpay</strong></div>
-                </div>
-            </div>
-
-            <div class="qr-steps">
-                <ol>
-                    <li>Open any UPI application (GPay, PhonePe, Paytm, Samsung Wallet) and scan the QR code.</li>
-                    <li>Enter the exact amount shown above and complete the payment.</li>
-                    <li>Your billing information has been registered. Notify our dispatch desk on WhatsApp with your payment UTR / screenshot.</li>
-                </ol>
-            </div>
-
-            <button type="button" id="confirmPaidWhatsAppBtn" class="btn btn-whatsapp-order btn-block">
-                <i class="fa-brands fa-whatsapp"></i> Confirm Payment on WhatsApp
-            </button>
+            <h3>Order & Payment Confirmed!</h3>
+            <p>Your transaction has been verified. The itemized invoice and delivery details have been emailed to your Gmail account and our dispatch desk.</p>
+            <a href="/buy-now" class="btn btn-green btn-block" style="margin-top: 15px;">Continue Shopping</a>
         </div>
     </div>
 </main>
 
+<!-- Load Razorpay Official SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', async () => {
-        localStorage.removeItem('roinax_cart');
-
         let cartItems = [];
         let currentUser = null;
-        let lastBillingData = null;
 
         const container = document.getElementById('cartItemsContainer');
         const layout = document.getElementById('cartLayoutGrid');
@@ -299,8 +274,8 @@
         });
 
         const authModal = document.getElementById('authGateModal');
-        const billingModal = document.getElementById('billingModal');
-        const qrModal = document.getElementById('qrModal');
+        const addressModal = document.getElementById('addressModal');
+        const orderSuccessModal = document.getElementById('orderSuccessModal');
 
         function openModal(m) {
             m.classList.add('active');
@@ -319,10 +294,10 @@
             bg.addEventListener('click', () => closeModal(bg.closest('.custom-modal')));
         });
 
-        // 1. Click "Pay via UPI QR Code" -> Opens Billing Modal (or Auth Gate if guest)
-        const payBtn = document.getElementById('openPayQrBtn');
-        if (payBtn) {
-            payBtn.addEventListener('click', () => {
+        // 1. Click "Proceed to Buy" -> Prompt for Address
+        const openAddressBtn = document.getElementById('openAddressModalBtn');
+        if (openAddressBtn) {
+            openAddressBtn.addEventListener('click', () => {
                 if (!cartItems || cartItems.length === 0) return;
 
                 if (!currentUser) {
@@ -330,80 +305,111 @@
                     return;
                 }
 
-                // Prefill user profile details if available
+                // Prefill user details if available
                 if (currentUser) {
-                    document.getElementById('billFullName').value = currentUser.name || (currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : '');
-                    document.getElementById('billEmail').value = currentUser.email || '';
-                    if (currentUser.phone) document.getElementById('billPhone').value = currentUser.phone;
+                    const fullName = (currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}` : currentUser.name) || '';
+                    document.getElementById('shipFullName').value = fullName.trim();
+                    document.getElementById('shipEmail').value = currentUser.email || '';
+                    if (currentUser.phone) document.getElementById('shipPhone').value = currentUser.phone;
                 }
 
-                openModal(billingModal);
+                openModal(addressModal);
             });
         }
 
-        // 2. Submit Billing Info -> Sends email to Gmail and opens QR modal
-        const billingForm = document.getElementById('billingForm');
-        billingForm.addEventListener('submit', async (e) => {
+        // 2. Submit Address & Open Razorpay
+        const shippingForm = document.getElementById('shippingAddressForm');
+        shippingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const submitBtn = document.getElementById('submitBillingBtn');
+            const submitBtn = document.getElementById('submitAddressBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting & Generating QR...';
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Securing Gateway Session...';
 
-            const formData = new FormData(billingForm);
-            const billingData = Object.fromEntries(formData.entries());
-            lastBillingData = billingData;
+            const formData = new FormData(shippingForm);
+            const shippingData = Object.fromEntries(formData.entries());
 
             try {
-                const response = await fetch('/api/cart/submit-billing', {
+                // Initialize Razorpay Order
+                const orderRes = await fetch('/api/cart/create-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(billingData)
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                const orderData = await orderRes.json();
 
-                const result = await response.json();
-
-                if (!response.ok || !result.success) {
-                    alert(result.message || 'Failed to submit billing information. Please retry.');
+                if (!orderRes.ok || !orderData.success) {
+                    alert(orderData.message || 'Could not connect to payment gateway. Please retry.');
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment';
+                    submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
                     return;
                 }
 
-                // Calculate totals for QR
-                const sub = cartItems.reduce((s, i) => s + (Number(i.price) * (i.quantity || 1)), 0);
-                const total = sub + Math.round(sub * 0.18);
+                closeModal(addressModal);
 
-                document.getElementById('qrTotalDisplay').textContent = formatINR(total);
-                document.getElementById('qrImage').src = '/assets/images/qr.jpeg';
+                // Configure Razorpay Options
+                const options = {
+                    key: orderData.key,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'ROINAX Global',
+                    description: 'Hardware Order & Delivery',
+                    image: '/assets/images/logo.png',
+                    order_id: orderData.orderId,
+                    prefill: {
+                        name: shippingData.fullName,
+                        email: shippingData.email,
+                        contact: shippingData.phone
+                    },
+                    theme: {
+                        color: '#53a922'
+                    },
+                    handler: async function (response) {
+                        // Verify Signature & Trigger Dual Email Dispatch
+                        const verifyRes = await fetch('/api/cart/verify-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                shippingData: shippingData
+                            })
+                        });
 
-                // Close Billing Modal & Open QR Modal
-                closeModal(billingModal);
-                openModal(qrModal);
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyRes.ok && verifyData.success) {
+                            openModal(orderSuccessModal);
+                            await loadServerCart();
+                        } else {
+                            alert(verifyData.message || 'Verification issue. Please contact support.');
+                        }
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
 
             } catch (err) {
-                console.error('Billing submit error:', err);
-                alert('Network issue while submitting details. Please try again.');
+                console.error('Checkout error:', err);
+                alert('Connection failure while initiating checkout.');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> Proceed to UPI QR Payment';
+                submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Proceed to Pay';
             }
         });
 
-        // 3. Confirm payment on WhatsApp
-        function sendWhatsApp(prepaid = false) {
-            let text = prepaid ? "*PAYMENT COMPLETED - HARDWARE ORDER*%0A%0A" : "*HARDWARE INQUIRY*%0A%0A";
-            
-            const customerName = lastBillingData?.fullName || currentUser?.name || 'Customer';
-            const customerEmail = lastBillingData?.email || currentUser?.email || '';
-            const customerPhone = lastBillingData?.phone || '';
-
-            text += `*Customer:* ${customerName}%0A*Email:* ${customerEmail}%0A`;
-            if (customerPhone) text += `*Mobile:* ${customerPhone}%0A`;
-            if (lastBillingData?.address) {
-                text += `*Delivery To:* ${lastBillingData.address}, ${lastBillingData.city}, ${lastBillingData.state} - ${lastBillingData.pincode}%0A`;
-            }
-            text += "%0A*Items:*%0A";
+        // WhatsApp inquiry fallback
+        document.getElementById('whatsappInquiryBtn').addEventListener('click', () => {
+            let text = "*HARDWARE INQUIRY*%0A%0A";
+            if (currentUser) text += `*Customer:* ${currentUser.name || currentUser.firstName || 'User'}%0A*Email:* ${currentUser.email}%0A%0A`;
+            text += "*Items:*%0A";
 
             let sub = 0;
             cartItems.forEach((item, i) => {
@@ -415,15 +421,9 @@
 
             const grand = sub + Math.round(sub * 0.18);
             text += `%0A*Grand Total (incl 18% GST):* ₹${grand.toLocaleString('en-IN')}%0A`;
-            if (prepaid) {
-                text += "%0A*Payment Method:* UPI QR (WASIM KARIM / rxw@pingpay)%0A*Status:* Paid. Attaching transaction screenshot.";
-            }
 
             window.open(`https://wa.me/917318692999?text=${text}`, '_blank');
-        }
-
-        document.getElementById('confirmPaidWhatsAppBtn').addEventListener('click', () => sendWhatsApp(true));
-        document.getElementById('whatsappInquiryBtn').addEventListener('click', () => sendWhatsApp(false));
+        });
 
         loadServerCart();
     });
