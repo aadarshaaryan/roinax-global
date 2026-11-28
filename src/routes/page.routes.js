@@ -291,19 +291,32 @@ router.get('/cart', ensureAuth, (req, res) => {
     });
 });
 
-router.get('/privacy', (req, res) => {
-    res.render('pages/privacy', {
-        layout: 'layouts/base',
+// Legal & Compliance Routes (Required by Razorpay)
+router.get('/privacy-policy', (req, res) => {
+    res.render('pages/privacy-policy', {
         title: 'Privacy Policy | ROINAX Global',
-        extraCss: '/css/legal.css'
+        extraCss: '/css/policies.css'
     });
 });
 
-router.get('/terms', (req, res) => {
-    res.render('pages/terms', {
-        layout: 'layouts/base',
-        title: 'Terms of Service | ROINAX Global',
-        extraCss: '/css/legal.css'
+router.get('/terms-and-conditions', (req, res) => {
+    res.render('pages/terms-and-conditions', {
+        title: 'Terms & Conditions | ROINAX Global',
+        extraCss: '/css/policies.css'
+    });
+});
+
+router.get('/refund-and-cancellation', (req, res) => {
+    res.render('pages/refund-and-cancellation', {
+        title: 'Refund & Cancellation Policy | ROINAX Global',
+        extraCss: '/css/policies.css'
+    });
+});
+
+router.get('/shipping-policy', (req, res) => {
+    res.render('pages/shipping-policy', {
+        title: 'Shipping & Delivery Policy | ROINAX Global',
+        extraCss: '/css/policies.css'
     });
 });
 

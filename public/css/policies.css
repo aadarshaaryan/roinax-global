@@ -1,0 +1,127 @@
+/* ==========================================================================
+   ROINAX Global - Legal & Policy Pages (policies.css)
+   ========================================================================== */
+
+.policy-page {
+    background: radial-gradient(circle at 50% 5%, rgba(83, 169, 34, 0.08) 0%, transparent 55%),
+                #0a0f0c;
+    color: #e5e8e6;
+    min-height: 100vh;
+    padding: 3.5rem 1rem 6rem;
+}
+
+.policy-container {
+    max-width: 920px;
+    margin: 0 auto;
+    background: rgba(18, 26, 21, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(130, 209, 43, 0.35);
+    border-radius: 18px;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.policy-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.policy-badge {
+    display: inline-block;
+    background: rgba(83, 169, 34, 0.15);
+    color: #82d12b;
+    border: 1px solid rgba(130, 209, 43, 0.3);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+}
+
+.policy-header h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.policy-updated {
+    font-size: 0.84rem;
+    color: #9cb1a4;
+}
+
+.policy-body {
+    line-height: 1.75;
+    font-size: 0.94rem;
+    color: #d1d5db;
+}
+
+.policy-body h2 {
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.policy-body h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background: #82d12b;
+    border-radius: 2px;
+}
+
+.policy-body p {
+    margin-bottom: 1.15rem;
+}
+
+.policy-body ul {
+    margin: 0 0 1.25rem 1.25rem;
+    list-style: disc;
+}
+
+.policy-body li {
+    margin-bottom: 0.45rem;
+}
+
+.policy-callout {
+    background: rgba(83, 169, 34, 0.08);
+    border-left: 3px solid #82d12b;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    color: #c9d8ce;
+}
+
+.contact-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+    .policy-page {
+        padding: 2rem 0.75rem 4rem;
+    }
+    .policy-container {
+        padding: 1.75rem 1.25rem;
+    }
+    .policy-header h1 {
+        font-size: 1.6rem;
+    }
+}
