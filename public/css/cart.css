@@ -2,6 +2,12 @@
    ROINAX Global - Enterprise Cart Styles (cart.css)
    ========================================================================== */
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 :root {
     --green-lime: #82d12b;
     --green-main: #53a922;
@@ -38,6 +44,15 @@ body {
     min-height: 100vh;
     padding: 2.5rem 1rem 6rem;
     overflow-y: visible;
+    width: 100%;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 .cart-page-header {
@@ -47,10 +62,11 @@ body {
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 16px;
+    width: 100%;
 }
 
 .cart-page-header h1 {
-    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    font-size: clamp(1.35rem, 2.5vw, 1.9rem);
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: -0.01em;
@@ -64,10 +80,11 @@ body {
 /* Grid Layout */
 .cart-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: minmax(0, 1fr) 380px;
     gap: 2rem;
     align-items: start;
     width: 100%;
+    min-width: 0;
 }
 
 /* Glassmorphism Cards */
@@ -81,6 +98,9 @@ body {
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 24px rgba(83, 169, 34, 0.06);
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
 }
 
 .cart-card-header {
@@ -90,6 +110,7 @@ body {
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 1rem;
+    gap: 12px;
 }
 
 .cart-card-header h2 {
@@ -97,6 +118,7 @@ body {
     color: var(--text-primary);
     font-weight: 700;
     margin: 0;
+    min-width: 0;
 }
 
 .btn-clear-link {
@@ -108,6 +130,8 @@ body {
     cursor: pointer;
     transition: opacity 0.2s;
     padding: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .btn-clear-link:hover {
@@ -115,6 +139,11 @@ body {
 }
 
 /* Item Rows */
+.cart-items-container {
+    width: 100%;
+    min-width: 0;
+}
+
 .cart-row {
     display: flex;
     justify-content: space-between;
@@ -122,6 +151,13 @@ body {
     padding: 1rem 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     gap: 16px;
+    width: 100%;
+    min-width: 0;
+}
+
+.row-info {
+    min-width: 0;
+    flex: 1;
 }
 
 .row-info h4 {
@@ -129,6 +165,7 @@ body {
     color: var(--text-primary);
     font-weight: 700;
     margin-bottom: 4px;
+    word-break: break-word;
 }
 
 .unit-price {
@@ -139,7 +176,8 @@ body {
 .row-controls {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
+    flex-shrink: 0;
 }
 
 .qty-control {
@@ -149,6 +187,7 @@ body {
     border-radius: var(--radius-sm);
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
+    flex-shrink: 0;
 }
 
 .qty-btn {
@@ -171,7 +210,7 @@ body {
 }
 
 .qty-display {
-    width: 34px;
+    width: 32px;
     text-align: center;
     font-size: 0.88rem;
     font-weight: 700;
@@ -182,8 +221,9 @@ body {
     font-size: 1.05rem;
     font-weight: 800;
     color: var(--green-lime);
-    min-width: 85px;
+    min-width: 80px;
     text-align: right;
+    white-space: nowrap;
 }
 
 .remove-btn {
@@ -194,6 +234,7 @@ body {
     font-size: 0.95rem;
     padding: 6px;
     transition: color 0.2s;
+    flex-shrink: 0;
 }
 
 .remove-btn:hover {
@@ -284,29 +325,6 @@ body {
     color: #ffffff;
 }
 
-.btn-whatsapp-order {
-    background: #1b8a41;
-    color: #ffffff;
-    border: none;
-    padding: 12px 18px;
-    border-radius: var(--radius-pill);
-    font-weight: 700;
-    font-size: 0.92rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.btn-whatsapp-order:hover {
-    background: #25d366;
-    color: #ffffff;
-    transform: translateY(-2px);
-}
-
 .btn-ghost {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -365,7 +383,7 @@ body {
 }
 
 /* ==========================================================================
-   MODALS
+   Modals
    ========================================================================== */
 .custom-modal {
     position: fixed;
@@ -374,7 +392,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 1.25rem;
+    padding: 1rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -399,7 +417,7 @@ body {
     border-top: 1px solid var(--card-border-top);
     border-radius: var(--radius-lg);
     padding: 2rem 1.75rem;
-    max-width: 460px;
+    max-width: 480px;
     width: 100%;
     max-height: 88vh;
     overflow-y: auto;
@@ -407,20 +425,7 @@ body {
     z-index: 2;
     text-align: center;
     box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65), 0 0 24px rgba(83, 169, 34, 0.1);
-    animation: modalPop 0.22s var(--ease);
     margin: auto;
-}
-
-@keyframes modalPop {
-    from {
-        transform: scale(0.94);
-        opacity: 0;
-    }
-
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
 }
 
 .modal-close {
@@ -493,7 +498,6 @@ body {
     background: rgba(255, 255, 255, 0.12);
 }
 
-/* Billing Information Modal */
 .billing-dialog {
     max-width: 540px;
     text-align: left;
@@ -539,7 +543,7 @@ body {
     font-size: 0.88rem;
     padding: 10px 12px;
     outline: none;
-    box-sizing: border-box;
+    width: 100%;
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -548,125 +552,127 @@ body {
     background: rgba(255, 255, 255, 0.07);
 }
 
-/* QR Code Modal Dialog */
-.qr-dialog {
-    max-width: 440px;
-}
-
-.qr-box {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-md);
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 16px 0;
-}
-
-.qr-img-wrapper {
-    background: #ffffff;
-    padding: 10px;
-    border-radius: 12px;
-    display: inline-block;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.qr-image {
-    width: 210px;
-    max-width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 6px;
-}
-
-.qr-amount-pill {
-    font-size: 1.05rem;
-    color: var(--text-primary);
-    margin-top: 10px;
-}
-
-.qr-amount-pill strong {
-    color: var(--green-lime);
-}
-
-.upi-id-box {
-    font-size: 0.84rem;
-    color: var(--text-secondary);
-}
-
-.qr-steps {
-    text-align: left;
-    background: rgba(83, 169, 34, 0.08);
-    border: 1px solid rgba(130, 209, 43, 0.2);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px 12px 28px;
-    margin-bottom: 18px;
-}
-
-.qr-steps ol {
-    margin: 0;
-    padding: 0;
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-}
-
-.qr-steps ol li {
-    margin-bottom: 4px;
-}
-
-.qr-steps ol li:last-child {
-    margin-bottom: 0;
-}
-
 /* ==========================================================================
-   Responsive Adaptations
+   Responsive Breakpoints
    ========================================================================== */
+
+/* Tablets (< 992px) */
 @media (max-width: 991px) {
     .cart-layout-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 100%;
         gap: 1.5rem;
     }
 
+    .cart-table-card,
     .cart-checkout-card {
+        padding: 1.35rem 1.25rem;
         width: 100%;
-        position: static;
+    }
+}
+
+/* Mobile Devices (< 640px) */
+@media (max-width: 640px) {
+    .cart-page {
+        padding: 1rem 0 6.5rem;
     }
 
-    .cart-row {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .cart-page-header {
+        margin-bottom: 1.15rem;
         flex-direction: column;
         align-items: flex-start;
-        gap: 14px;
+        gap: 10px;
     }
 
+    .cart-page-header h1 {
+        font-size: 1.25rem;
+        line-height: 1.3;
+    }
+
+    .cart-page-header .btn-ghost {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .cart-table-card,
+    .cart-checkout-card {
+        padding: 1rem 0.85rem;
+        border-radius: 14px;
+        width: 100%;
+    }
+
+    .cart-card-header {
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .cart-card-header h2 {
+        font-size: 0.98rem;
+        line-height: 1.3;
+    }
+
+    .btn-clear-link {
+        font-size: 0.78rem;
+    }
+
+    /* Stack product name on top, controls horizontally below */
+    .cart-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 0.85rem 0;
+    }
+
+    .row-info h4 {
+        font-size: 0.9rem;
+        line-height: 1.3;
+        margin-bottom: 2px;
+    }
+
+    .unit-price {
+        font-size: 0.76rem;
+    }
+
+    /* Stepper left, price center-right, trash right */
     .row-controls {
         width: 100%;
         display: flex;
         justify-content: space-between;
         align-items: center;
-    }
-}
-
-@media (max-width: 600px) {
-    .cart-page {
-        padding: 1.5rem 0.75rem 4rem;
+        gap: 8px;
     }
 
-    .cart-table-card,
-    .cart-checkout-card {
-        padding: 1.25rem 1rem;
+    .qty-control {
+        border-radius: 6px;
     }
 
-    .cart-page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+    .qty-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
     }
 
-    .modal-dialog {
-        padding: 1.5rem 1.15rem;
-        max-height: 90vh;
+    .qty-display {
+        width: 26px;
+        font-size: 0.82rem;
+    }
+
+    .row-total {
+        font-size: 0.98rem;
+        min-width: 0;
+        text-align: right;
+        flex: 1;
+        padding: 0 6px;
+    }
+
+    .remove-btn {
+        padding: 6px 6px;
+        font-size: 0.95rem;
+        color: #ef4444;
     }
 
     .billing-form-grid {
@@ -678,127 +684,8 @@ body {
         grid-column: span 1;
     }
 
-    .qr-image {
-        width: 180px;
-    }
-}
-
-/* ==========================================================================
-   Mobile Viewport Refinements (< 640px)
-   ========================================================================== */
-@media (max-width: 640px) {
-    .cart-page {
-        padding: 1.25rem 0.65rem 6.5rem !important;
-        overflow-x: hidden;
-    }
-
-    .container {
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-
-    /* Header alignment */
-    .cart-page-header {
-        margin-bottom: 1.25rem !important;
-        gap: 10px;
-    }
-
-    .cart-page-header h1 {
-        font-size: 1.35rem !important;
-        line-height: 1.25;
-        letter-spacing: -0.02em;
-    }
-
-    .cart-page-header .btn-ghost {
-        font-size: 0.8rem;
-        padding: 6px 12px;
-    }
-
-    /* Cards spacing & padding */
-    .cart-table-card,
-    .cart-checkout-card {
-        padding: 1.15rem 0.9rem !important;
-        border-radius: 14px !important;
-        box-sizing: border-box;
-        width: 100% !important;
-    }
-
-    .cart-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .cart-card-header h2 {
-        font-size: 1rem !important;
-    }
-
-    .btn-clear-link {
-        font-size: 0.78rem;
-        white-space: nowrap;
-    }
-
-    /* Item row adjustments */
-    .cart-row {
-        padding: 0.9rem 0 !important;
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 10px !important;
-    }
-
-    .row-info h4 {
-        font-size: 0.9rem !important;
-        line-height: 1.35;
-    }
-
-    .unit-price {
-        font-size: 0.78rem;
-    }
-
-    /* Controls bar: Stepper, Price, Trash aligned horizontally */
-    .row-controls {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        gap: 8px !important;
-    }
-
-    .qty-control {
-        border-radius: 6px;
-    }
-
-    .qty-btn {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 0.85rem;
-    }
-
-    .qty-display {
-        width: 28px !important;
-        font-size: 0.82rem !important;
-    }
-
-    .row-total {
-        font-size: 0.98rem !important;
-        min-width: auto !important;
-        text-align: center;
-        flex: 1;
-    }
-
-    .remove-btn {
-        padding: 6px 8px !important;
-        font-size: 0.9rem;
-        color: #ef4444 !important;
-        opacity: 0.9;
-    }
-
-    /* Ensure WhatsApp floating button does not obscure controls */
-    .whatsapp-float,
-    .btn-whatsapp-order {
-        z-index: 99;
+    .modal-dialog {
+        padding: 1.4rem 1rem;
+        max-width: 94vw;
     }
 }
