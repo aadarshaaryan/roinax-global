@@ -2,12 +2,6 @@
    ROINAX Global - Enterprise Cart Styles (cart.css)
    ========================================================================== */
 
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
 :root {
     --green-lime: #82d12b;
     --green-main: #53a922;
@@ -32,27 +26,30 @@
 }
 
 /* Page Scaffolding */
-html,
-body {
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
     overflow-x: hidden;
     min-height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .cart-page {
     background: radial-gradient(circle at 50% 10%, rgba(83, 169, 34, 0.1) 0%, transparent 60%),
-        var(--cart-bg);
+                var(--cart-bg);
     min-height: 100vh;
     padding: 2.5rem 1rem 6rem;
-    overflow-y: visible;
-    width: 100%;
+    overflow-x: hidden;
 }
 
-.container {
+.cart-page .container {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding: 0 1rem;
 }
 
 .cart-page-header {
@@ -62,15 +59,15 @@ body {
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 16px;
-    width: 100%;
 }
 
 .cart-page-header h1 {
-    font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+    font-size: clamp(1.3rem, 4vw, 1.9rem);
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: -0.01em;
     margin: 0;
+    word-break: break-word;
 }
 
 .text-lime {
@@ -80,11 +77,10 @@ body {
 /* Grid Layout */
 .cart-layout-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-columns: 1fr 380px;
     gap: 2rem;
     align-items: start;
     width: 100%;
-    min-width: 0;
 }
 
 /* Glassmorphism Cards */
@@ -98,9 +94,8 @@ body {
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 24px rgba(83, 169, 34, 0.06);
-    min-width: 0;
-    max-width: 100%;
     width: 100%;
+    overflow: hidden;
 }
 
 .cart-card-header {
@@ -118,7 +113,6 @@ body {
     color: var(--text-primary);
     font-weight: 700;
     margin: 0;
-    min-width: 0;
 }
 
 .btn-clear-link {
@@ -131,7 +125,6 @@ body {
     transition: opacity 0.2s;
     padding: 0;
     white-space: nowrap;
-    flex-shrink: 0;
 }
 
 .btn-clear-link:hover {
@@ -139,11 +132,6 @@ body {
 }
 
 /* Item Rows */
-.cart-items-container {
-    width: 100%;
-    min-width: 0;
-}
-
 .cart-row {
     display: flex;
     justify-content: space-between;
@@ -152,19 +140,18 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     gap: 16px;
     width: 100%;
-    min-width: 0;
 }
 
 .row-info {
+    flex: 1 1 auto;
     min-width: 0;
-    flex: 1;
 }
 
 .row-info h4 {
     font-size: 0.95rem;
     color: var(--text-primary);
     font-weight: 700;
-    margin-bottom: 4px;
+    margin: 0 0 4px 0;
     word-break: break-word;
 }
 
@@ -176,7 +163,7 @@ body {
 .row-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex-shrink: 0;
 }
 
@@ -187,14 +174,13 @@ body {
     border-radius: var(--radius-sm);
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
-    flex-shrink: 0;
 }
 
 .qty-btn {
     background: rgba(255, 255, 255, 0.06);
     border: none;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     font-weight: 700;
     cursor: pointer;
     color: var(--text-primary);
@@ -202,6 +188,7 @@ body {
     align-items: center;
     justify-content: center;
     transition: background 0.15s;
+    padding: 0;
 }
 
 .qty-btn:hover {
@@ -221,7 +208,7 @@ body {
     font-size: 1.05rem;
     font-weight: 800;
     color: var(--green-lime);
-    min-width: 80px;
+    min-width: 75px;
     text-align: right;
     white-space: nowrap;
 }
@@ -231,10 +218,12 @@ body {
     border: none;
     color: #8b9d90;
     cursor: pointer;
-    font-size: 0.95rem;
-    padding: 6px;
+    font-size: 1rem;
+    padding: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.2s;
-    flex-shrink: 0;
 }
 
 .remove-btn:hover {
@@ -304,7 +293,7 @@ body {
     background: var(--green-grad);
     color: #ffffff;
     border: none;
-    padding: 12px 18px;
+    padding: 13px 18px;
     border-radius: var(--radius-pill);
     font-weight: 700;
     font-size: 0.92rem;
@@ -323,6 +312,29 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(83, 169, 34, 0.45);
     color: #ffffff;
+}
+
+.btn-whatsapp-order {
+    background: #1b8a41;
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.btn-whatsapp-order:hover {
+    background: #25d366;
+    color: #ffffff;
+    transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -425,7 +437,19 @@ body {
     z-index: 2;
     text-align: center;
     box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65), 0 0 24px rgba(83, 169, 34, 0.1);
+    animation: modalPop 0.22s var(--ease);
     margin: auto;
+}
+
+@keyframes modalPop {
+    from {
+        transform: scale(0.94);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-close {
@@ -446,16 +470,16 @@ body {
 }
 
 .modal-icon-header {
-    width: 58px;
-    height: 58px;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     background: rgba(83, 169, 34, 0.15);
     color: var(--green-lime);
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 16px;
+    margin: 0 auto 14px;
     border: 1px solid rgba(130, 209, 43, 0.3);
 }
 
@@ -470,7 +494,7 @@ body {
     font-size: 0.88rem;
     color: var(--text-secondary);
     line-height: 1.5;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 }
 
 .modal-auth-actions {
@@ -498,6 +522,7 @@ body {
     background: rgba(255, 255, 255, 0.12);
 }
 
+/* Delivery Address Modal */
 .billing-dialog {
     max-width: 540px;
     text-align: left;
@@ -553,56 +578,51 @@ body {
 }
 
 /* ==========================================================================
-   Responsive Breakpoints
+   Responsive Adaptations
    ========================================================================== */
-
-/* Tablets (< 992px) */
 @media (max-width: 991px) {
     .cart-layout-grid {
-        grid-template-columns: 100%;
+        grid-template-columns: 1fr;
         gap: 1.5rem;
     }
 
-    .cart-table-card,
     .cart-checkout-card {
-        padding: 1.35rem 1.25rem;
         width: 100%;
+        position: static;
     }
 }
 
-/* Mobile Devices (< 640px) */
+/* Mobile Screen Polish (< 640px) */
 @media (max-width: 640px) {
     .cart-page {
-        padding: 1rem 0 6.5rem;
+        padding: 1.25rem 0.5rem 6.5rem !important;
     }
 
-    .container {
-        padding-left: 10px;
-        padding-right: 10px;
+    .cart-page .container {
+        padding: 0 6px !important;
     }
 
     .cart-page-header {
-        margin-bottom: 1.15rem;
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        gap: 12px;
+        margin-bottom: 1.25rem;
     }
 
     .cart-page-header h1 {
-        font-size: 1.25rem;
+        font-size: 1.35rem;
         line-height: 1.3;
     }
 
     .cart-page-header .btn-ghost {
-        font-size: 0.8rem;
-        padding: 6px 12px;
+        font-size: 0.82rem;
+        padding: 6px 14px;
     }
 
     .cart-table-card,
     .cart-checkout-card {
-        padding: 1rem 0.85rem;
+        padding: 1.15rem 0.85rem !important;
         border-radius: 14px;
-        width: 100%;
     }
 
     .cart-card-header {
@@ -611,33 +631,25 @@ body {
     }
 
     .cart-card-header h2 {
-        font-size: 0.98rem;
-        line-height: 1.3;
+        font-size: 1.05rem;
     }
 
-    .btn-clear-link {
-        font-size: 0.78rem;
-    }
-
-    /* Stack product name on top, controls horizontally below */
     .cart-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        gap: 12px;
         padding: 0.85rem 0;
     }
 
     .row-info h4 {
-        font-size: 0.9rem;
-        line-height: 1.3;
-        margin-bottom: 2px;
+        font-size: 0.92rem;
+        line-height: 1.35;
     }
 
     .unit-price {
-        font-size: 0.76rem;
+        font-size: 0.78rem;
     }
 
-    /* Stepper left, price center-right, trash right */
     .row-controls {
         width: 100%;
         display: flex;
@@ -647,32 +659,39 @@ body {
     }
 
     .qty-control {
-        border-radius: 6px;
+        flex-shrink: 0;
     }
 
     .qty-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 0.85rem;
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
     }
 
     .qty-display {
-        width: 26px;
-        font-size: 0.82rem;
+        width: 30px;
+        font-size: 0.85rem;
     }
 
     .row-total {
-        font-size: 0.98rem;
-        min-width: 0;
+        font-size: 1rem;
+        min-width: auto;
         text-align: right;
-        flex: 1;
-        padding: 0 6px;
+        flex: 1 1 auto;
+        padding: 0 8px;
     }
 
     .remove-btn {
-        padding: 6px 6px;
-        font-size: 0.95rem;
+        padding: 6px;
+        font-size: 1rem;
         color: #ef4444;
+        flex-shrink: 0;
+    }
+
+    .modal-dialog {
+        padding: 1.5rem 1rem;
+        max-height: 90vh;
+        border-radius: 14px;
     }
 
     .billing-form-grid {
@@ -684,8 +703,8 @@ body {
         grid-column: span 1;
     }
 
-    .modal-dialog {
-        padding: 1.4rem 1rem;
-        max-width: 94vw;
+    .whatsapp-float,
+    .btn-whatsapp-order {
+        z-index: 99;
     }
 }

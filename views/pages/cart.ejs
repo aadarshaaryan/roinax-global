@@ -145,10 +145,7 @@
     </div>
 </main>
 
-<!-- Load Razorpay Official SDK -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
-<!-- Load Razorpay Official SDK -->
+<!-- Load Razorpay Official SDK (single inclusion) -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
@@ -164,7 +161,7 @@
             return '₹' + Number(val || 0).toLocaleString('en-IN');
         }
 
-        // 1. Independent Auth Fetch (Does NOT block Cart Fetch if not logged in)
+        // 1. Independent Auth Fetch (Does NOT block Cart Fetch if guest)
         try {
             const authRes = await fetch('/api/auth/me');
             if (authRes.ok) {

@@ -58,7 +58,7 @@
             <div class="product-grid" id="productGrid">
                 <!-- 1. Mantra MFS110 L1 -->
                 <article class="product-card" data-category="biometric" data-id="dev-mantra-mfs110"
-                    data-name="MFS110 L1 Biometric Device" data-price="3199">
+                    data-name="MFS110 L1 Biometric Device" data-price="2699">
                     <div class="product-badge">L1 UIDAI Certified</div>
                     <div class="product-img-box">
                         <img src="/assets/images/devices/mantra-mfs110.jpeg" alt="MFS110 L1 Biometric Device"
@@ -100,15 +100,15 @@
 
                 <!-- 2. Morpho MSO 1300 E3 -->
                 <article class="product-card" data-category="biometric" data-id="dev-morpho-1300"
-                    data-name="Morpho MSO 1300 E3 Device" data-price="3499">
+                    data-name="Morpho L1 Fingerprint Scanner Device" data-price="3199">
                     <div class="product-badge">High Sensitivity</div>
                     <div class="product-img-box">
-                        <img src="/assets/images/devices/morpho-1300.jpeg" alt="Morpho MSO 1300 E3 Device"
+                        <img src="/assets/images/devices/morpho-1300.jpeg" alt="Morpho L1 Biometric Device"
                             onerror="this.src='https://placehold.co/400x300/132216/82d12b?text=Morpho+1300+E3'">
                     </div>
                     <div class="product-info">
                         <span class="device-brand">IDEMIA (MORPHO)</span>
-                        <h3>Morpho L1 Fingerprint Scanner Device </h3>
+                        <h3>Morpho L1 Fingerprint Scanner Device</h3>
                         <p>Industrial-grade biometric sensor with FBI PIV IQS certification. Best suited for elderly and
                             faint fingerprint capture in rural banking.</p>
                         <ul class="device-specs">
@@ -142,7 +142,7 @@
 
                 <!-- 3. Startek FM220U -->
                 <article class="product-card" data-category="biometric" data-id="dev-startek-fm220"
-                    data-name="Startek FM220U Biometric Device" data-price="2999">
+                    data-name="Startek Fm220u L1 Device" data-price="2699">
                     <div class="product-badge">Fast Capture</div>
                     <div class="product-img-box">
                         <img src="/assets/images/devices/startek-fm220.jpeg" alt="Startek FM220U Biometric Scanner"
@@ -310,7 +310,7 @@
 
                 <!-- 7. Fino Mini MicroATM Terminal -->
                 <article class="product-card" data-category="microatm" data-id="dev-fino-microatm"
-                    data-name="Fino Mini MicroATM Terminal" data-price="1999">
+                    data-name="Fino Mini MicroATM Terminal" data-price="2199">
                     <div class="product-badge">Multi-Bank AEPS</div>
                     <div class="product-img-box">
                         <img src="/assets/images/devices/pax-d180.jpeg" alt="Fino Mini MicroATM Terminal"
@@ -689,13 +689,11 @@
                 });
             });
 
-            // Add to Cart via Direct Server Endpoint
+            // Add to Cart via Direct Server Endpoint (ignores client price / name, validates deviceId)
             document.querySelectorAll('.add-to-cart-btn').forEach(button => {
                 button.addEventListener('click', async function () {
                     const card = this.closest('.product-card');
                     const deviceId = card.getAttribute('data-id');
-                    const name = card.getAttribute('data-name');
-                    const price = parseInt(card.getAttribute('data-price'), 10);
                     const qtyInput = card.querySelector('.qty-input');
                     const quantity = Math.max(1, parseInt(qtyInput ? qtyInput.value : 1, 10) || 1);
 
@@ -707,7 +705,7 @@
                         const res = await fetch('/api/cart/add', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ deviceId, name, price, quantity })
+                            body: JSON.stringify({ deviceId, quantity })
                         });
                         const data = await res.json();
 

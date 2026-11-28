@@ -2,10 +2,18 @@ import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import prisma from '../lib/prisma.js';
 import { sendOrderEmail } from '../lib/mailer.js';
+import { PRODUCTS_CATALOG } from '../config/products.js';
 
 // Helper: Resolve userId across Google OAuth and Local Session formats
 const getSessionUserId = (req) => {
     return req.session?.userId || req.session?.user?.id || null;
+};
+
+// Helper: Sanitize text before rendering into email HTML templates (XSS prevention)
+const escapeHtml = (str) => {
+    return String(str || '').replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
 };
 
 // Safe on-demand Razorpay instance with key sanitization
@@ -17,8 +25,8 @@ const getRazorpayClient = () => {
         throw new Error('Razorpay credentials missing. Verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Render Environment.');
     }
 
-    const key_id = String(rawKeyId).trim().replace(/^["']|["']$/g, '');
-    const key_secret = String(rawSecret).trim().replace(/^["']|["']$/g, '');
+    const key_id = String(rawKeyId).trim().replace(/^["']|["']$/g, '').replace(/[\r\n\t\s]/g, '');
+    const key_secret = String(rawSecret).trim().replace(/^["']|["']$/g, '').replace(/[\r\n\t\s]/g, '');
 
     return {
         instance: new Razorpay({ key_id, key_secret }),
@@ -31,9 +39,17 @@ const getRazorpayClient = () => {
 const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, grandTotal, subtotal, tax, paymentId, orderId }) => {
     const adminEmail = process.env.ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || process.env.GMAIL_USER;
 
+    const safeFullName = escapeHtml(shippingData.fullName);
+    const safeAddress = escapeHtml(shippingData.address);
+    const safeCity = escapeHtml(shippingData.city);
+    const safeState = escapeHtml(shippingData.state);
+    const safePincode = escapeHtml(shippingData.pincode);
+    const safePhone = escapeHtml(shippingData.phone);
+    const safeGstin = shippingData.gstin ? escapeHtml(shippingData.gstin) : '';
+
     const itemsTableRows = cartItems.map((item, idx) => `
         <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: #111827;">${idx + 1}. <strong>${item.name}</strong></td>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: #111827;">${idx + 1}. <strong>${escapeHtml(item.name)}</strong></td>
             <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">${item.quantity || 1}</td>
             <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827;">₹${(Number(item.price) * (item.quantity || 1)).toLocaleString('en-IN')}</td>
         </tr>
@@ -68,13 +84,13 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
             </div>
 
             <p style="font-size: 0.95rem; color: #374151; line-height: 1.5;">
-                Hello <strong>${shippingData.fullName}</strong>,<br/>
+                Hello <strong>${safeFullName}</strong>,<br/>
                 We have received your payment of <strong>₹${grandTotal.toLocaleString('en-IN')}</strong>. Your order is confirmed and will be dispatched to your shipping address.
             </p>
 
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin: 16px 0; font-size: 0.88rem;">
-                <p style="margin: 2px 0;"><strong>Payment ID:</strong> <code>${paymentId}</code></p>
-                <p style="margin: 2px 0;"><strong>Order Reference:</strong> <code>${orderId}</code></p>
+                <p style="margin: 2px 0;"><strong>Payment ID:</strong> <code>${escapeHtml(paymentId)}</code></p>
+                <p style="margin: 2px 0;"><strong>Order Reference:</strong> <code>${escapeHtml(orderId)}</code></p>
             </div>
 
             <h3 style="color: #111827; font-size: 1rem; margin-bottom: 6px;">Items Purchased:</h3>
@@ -82,10 +98,10 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
 
             <h3 style="color: #111827; font-size: 1rem; margin: 20px 0 6px;">Delivery Destination:</h3>
             <div style="background: #f9fafb; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; color: #374151; line-height: 1.5;">
-                <strong>${shippingData.fullName}</strong><br/>
-                ${shippingData.address}<br/>
-                ${shippingData.city}, ${shippingData.state} - ${shippingData.pincode}<br/>
-                Contact: ${shippingData.phone}
+                <strong>${safeFullName}</strong><br/>
+                ${safeAddress}<br/>
+                ${safeCity}, ${safeState} - ${safePincode}<br/>
+                Contact: ${safePhone}
             </div>
 
             <p style="font-size: 0.8rem; color: #9ca3af; text-align: center; margin-top: 24px;">
@@ -104,17 +120,17 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
 
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;">
                 <p style="margin: 2px 0;"><strong>Paid Amount:</strong> <span style="color: #16a34a; font-weight: 800; font-size: 1.1rem;">₹${grandTotal.toLocaleString('en-IN')}</span></p>
-                <p style="margin: 2px 0;"><strong>Customer Email:</strong> ${customerEmail}</p>
-                <p style="margin: 2px 0;"><strong>Razorpay Payment ID:</strong> <code>${paymentId}</code></p>
+                <p style="margin: 2px 0;"><strong>Customer Email:</strong> ${escapeHtml(customerEmail)}</p>
+                <p style="margin: 2px 0;"><strong>Razorpay Payment ID:</strong> <code>${escapeHtml(paymentId)}</code></p>
             </div>
 
             <h3 style="color: #111827; font-size: 1rem; margin-bottom: 6px;">Customer & Shipping Address:</h3>
             <div style="background: #f9fafb; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; color: #374151; line-height: 1.5; margin-bottom: 16px;">
-                <strong>Name:</strong> ${shippingData.fullName}<br/>
-                <strong>Phone:</strong> ${shippingData.phone}<br/>
-                <strong>Email:</strong> ${customerEmail}<br/>
-                <strong>Full Address:</strong> ${shippingData.address}, ${shippingData.city}, ${shippingData.state} - ${shippingData.pincode}<br/>
-                ${shippingData.gstin ? `<strong>GSTIN:</strong> ${shippingData.gstin}<br/>` : ''}
+                <strong>Name:</strong> ${safeFullName}<br/>
+                <strong>Phone:</strong> ${safePhone}<br/>
+                <strong>Email:</strong> ${escapeHtml(customerEmail)}<br/>
+                <strong>Full Address:</strong> ${safeAddress}, ${safeCity}, ${safeState} - ${safePincode}<br/>
+                ${safeGstin ? `<strong>GSTIN:</strong> ${safeGstin}<br/>` : ''}
             </div>
 
             <h3 style="color: #111827; font-size: 1rem; margin-bottom: 6px;">Products to Dispatch:</h3>
@@ -122,7 +138,6 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         </div>
     `;
 
-    // Send customer receipt
     await sendOrderEmail({
         to: customerEmail,
         replyTo: adminEmail,
@@ -130,12 +145,11 @@ const dispatchOrderReceipts = async ({ customerEmail, shippingData, cartItems, g
         html: customerHtml,
     });
 
-    // Send owner dispatch alert
     if (adminEmail) {
         await sendOrderEmail({
             to: adminEmail,
             replyTo: customerEmail,
-            subject: `[NEW ORDER] ₹${grandTotal.toLocaleString('en-IN')} from ${shippingData.fullName}`,
+            subject: `[NEW ORDER] ₹${grandTotal.toLocaleString('en-IN')} from ${safeFullName}`,
             html: adminHtml,
         });
     }
@@ -146,7 +160,6 @@ export const getCart = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
 
-        // 1. Authenticated User (Database)
         if (userId) {
             let cart = await prisma.cart.findUnique({
                 where: { userId },
@@ -166,7 +179,6 @@ export const getCart = async (req, res) => {
             });
         }
 
-        // 2. Guest User (Session Store)
         const guestItems = Array.isArray(req.session?.cart) ? req.session.cart : [];
         return res.status(200).json({
             success: true,
@@ -182,13 +194,20 @@ export const getCart = async (req, res) => {
 export const addCartItem = async (req, res) => {
     try {
         const userId = getSessionUserId(req);
-        const { deviceId, name, price, quantity = 1 } = req.body;
+        const { deviceId, quantity = 1 } = req.body;
 
-        if (!deviceId || !name || price === undefined) {
-            return res.status(400).json({ success: false, message: 'Invalid product details.' });
+        if (!deviceId) {
+            return res.status(400).json({ success: false, message: 'Product ID is required.' });
         }
 
-        const itemPrice = parseFloat(price);
+        // Authoritative server lookup (ignores client prices and names completely)
+        const product = PRODUCTS_CATALOG[String(deviceId)];
+        if (!product) {
+            return res.status(400).json({ success: false, message: 'Invalid or unknown product.' });
+        }
+
+        const itemPrice = Number(product.price);
+        const itemName = product.name;
         const itemQty = Math.max(1, parseInt(quantity, 10) || 1);
 
         // A. Logged-in User (Supabase Postgres)
@@ -210,7 +229,11 @@ export const addCartItem = async (req, res) => {
             if (existingItem) {
                 item = await prisma.cartItem.update({
                     where: { id: existingItem.id },
-                    data: { quantity: existingItem.quantity + itemQty }
+                    data: {
+                        quantity: existingItem.quantity + itemQty,
+                        price: itemPrice,
+                        name: itemName
+                    }
                 });
             } else {
                 item = await prisma.cartItem.create({
@@ -218,7 +241,7 @@ export const addCartItem = async (req, res) => {
                         cartId: cart.id,
                         deviceId: String(deviceId),
                         productId: String(deviceId),
-                        name: String(name),
+                        name: itemName,
                         price: itemPrice,
                         quantity: itemQty
                     }
@@ -236,7 +259,7 @@ export const addCartItem = async (req, res) => {
             });
         }
 
-        // B. Guest User (Persist into PrismaSessionStore)
+        // B. Guest User (PrismaSessionStore)
         if (!Array.isArray(req.session.cart)) {
             req.session.cart = [];
         }
@@ -244,10 +267,12 @@ export const addCartItem = async (req, res) => {
         const existingIndex = req.session.cart.findIndex(i => i.deviceId === String(deviceId));
         if (existingIndex > -1) {
             req.session.cart[existingIndex].quantity += itemQty;
+            req.session.cart[existingIndex].price = itemPrice;
+            req.session.cart[existingIndex].name = itemName;
         } else {
             req.session.cart.push({
                 deviceId: String(deviceId),
-                name: String(name),
+                name: itemName,
                 price: itemPrice,
                 quantity: itemQty
             });
@@ -389,7 +414,13 @@ export const createPaymentOrder = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Your basket is currently empty.' });
         }
 
-        const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) * (item.quantity || 1)), 0);
+        // Always calculate subtotal against the authoritative server catalog
+        const subtotal = cartItems.reduce((acc, item) => {
+            const catalogItem = PRODUCTS_CATALOG[item.deviceId];
+            const verifiedPrice = catalogItem ? catalogItem.price : Number(item.price);
+            return acc + (verifiedPrice * (item.quantity || 1));
+        }, 0);
+
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
@@ -450,19 +481,22 @@ export const verifyPaymentAndNotify = async (req, res) => {
 
         const { key_secret } = getRazorpayClient();
 
-        // 1. Authenticate HMAC SHA256 Signature
+        // 1. Authenticate HMAC SHA256 Signature using constant-time comparison (prevents timing attacks)
         const body = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSignature = crypto
             .createHmac('sha256', key_secret)
             .update(body)
             .digest('hex');
 
-        if (expectedSignature !== razorpay_signature) {
+        const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+        const clientBuffer = Buffer.from(razorpay_signature, 'utf8');
+
+        if (expectedBuffer.length !== clientBuffer.length || !crypto.timingSafeEqual(expectedBuffer, clientBuffer)) {
             console.error('[SECURITY_ALERT] Invalid signature detected for payment:', razorpay_payment_id);
             return res.status(400).json({ success: false, message: 'Payment verification failed: invalid signature.' });
         }
 
-        // 2. Retrieve Items
+        // 2. Retrieve Items and guarantee accurate names and prices
         let cartItems = [];
         if (userId) {
             const cart = await prisma.cart.findUnique({
@@ -474,7 +508,17 @@ export const verifyPaymentAndNotify = async (req, res) => {
             cartItems = req.session.cart || [];
         }
 
-        const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) * (item.quantity || 1)), 0);
+        // Ensure email displays verified catalog details
+        const verifiedItems = cartItems.map(item => {
+            const cat = PRODUCTS_CATALOG[item.deviceId];
+            return {
+                ...item,
+                name: cat ? cat.name : item.name,
+                price: cat ? cat.price : item.price
+            };
+        });
+
+        const subtotal = verifiedItems.reduce((acc, item) => acc + (Number(item.price) * (item.quantity || 1)), 0);
         const tax = Math.round(subtotal * 0.18);
         const grandTotal = subtotal + tax;
 
@@ -482,7 +526,7 @@ export const verifyPaymentAndNotify = async (req, res) => {
         await dispatchOrderReceipts({
             customerEmail: shippingData.email.trim().toLowerCase(),
             shippingData,
-            cartItems,
+            cartItems: verifiedItems,
             grandTotal,
             subtotal,
             tax,
