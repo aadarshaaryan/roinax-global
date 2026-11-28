@@ -4,8 +4,7 @@ export const PRODUCTS_CATALOG = {
     'dev-mantra-mfs110': {
         name: 'MFS110 L1 Biometric Device',
         brand: 'MANTRA SOFTECH',
-        // price: 2699,
-        price: 1,
+        price: 2699,
         mrp: 4500,
         category: 'biometric'
     },

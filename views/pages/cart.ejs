@@ -13,7 +13,7 @@
                     <button type="button" id="clearCartBtn" class="btn-clear-link">Clear Basket</button>
                 </div>
                 <div class="cart-items-container" id="cartItemsContainer">
-                    <!-- Populated dynamically via server -->
+                    <!-- Populated dynamically via server with non-intrusive loader -->
                 </div>
             </div>
 
@@ -145,7 +145,7 @@
     </div>
 </main>
 
-<!-- Load Razorpay Official SDK (single inclusion) -->
+<!-- Load Razorpay Official SDK -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
@@ -161,7 +161,7 @@
             return '₹' + Number(val || 0).toLocaleString('en-IN');
         }
 
-        // 1. Independent Auth Fetch (Does NOT block Cart Fetch if guest)
+        // 1. Independent Auth Fetch
         try {
             const authRes = await fetch('/api/auth/me');
             if (authRes.ok) {
@@ -176,8 +176,20 @@
             console.warn('[Cart Auth Check]: Guest mode or endpoint unreached', e);
         }
 
-        // 2. Load Cart
-        async function loadServerCart() {
+        // 2. Load Cart with Non-Blocking Inline Micro-Loader
+        async function loadServerCart(showInitialSpinner = true) {
+            if (showInitialSpinner && container) {
+                container.innerHTML = `
+                    <div class="cart-inline-loading">
+                        <div class="brand-mini-loader">
+                            <div class="mini-spin-ring"></div>
+                            <img src="/assets/images/logo-icon.png" alt="Loading" class="mini-center-icon">
+                        </div>
+                        <span>Syncing your basket...</span>
+                    </div>
+                `;
+            }
+
             try {
                 const cartRes = await fetch('/api/cart');
                 const cartData = await cartRes.json();
@@ -250,34 +262,47 @@
             if (grandEl) grandEl.textContent = formatINR(grand);
         }
 
-        // Event delegation for Quantity Adjustments & Removal
+        // 4. Subtle In-Place Quantity Updates & Item Removal
         container.addEventListener('click', async (e) => {
             const dec = e.target.closest('.dec-btn');
             const inc = e.target.closest('.inc-btn');
             const rem = e.target.closest('.remove-btn');
 
-            if (dec) {
-                const deviceId = dec.dataset.id;
-                const currentQty = parseInt(dec.dataset.qty, 10);
-                await fetch('/api/cart/update-qty', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, quantity: currentQty - 1 })
-                });
-                await loadServerCart();
-            } else if (inc) {
-                const deviceId = inc.dataset.id;
-                const currentQty = parseInt(inc.dataset.qty, 10);
-                await fetch('/api/cart/update-qty', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deviceId, quantity: currentQty + 1 })
-                });
-                await loadServerCart();
+            if (dec || inc) {
+                const btn = dec || inc;
+                const deviceId = btn.dataset.id;
+                const currentQty = parseInt(btn.dataset.qty, 10);
+                const targetQty = dec ? currentQty - 1 : currentQty + 1;
+
+                const row = btn.closest('.cart-row');
+                const qtyDisplay = row ? row.querySelector('.qty-display') : null;
+
+                // Subtle in-place spinner replaces only the quantity digit
+                if (qtyDisplay) {
+                    qtyDisplay.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin qty-spinner"></i>';
+                }
+                if (row) row.classList.add('row-updating');
+
+                try {
+                    await fetch('/api/cart/update-qty', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceId, quantity: targetQty })
+                    });
+                    await loadServerCart(false); // Seamless update without full re-render jump
+                } catch (err) {
+                    console.error('Qty update error:', err);
+                    await loadServerCart(false);
+                }
             } else if (rem) {
                 const deviceId = rem.dataset.id;
+                const row = rem.closest('.cart-row');
+                if (row) {
+                    row.style.opacity = '0.35';
+                    row.style.pointerEvents = 'none';
+                }
                 await fetch(`/api/cart/item/${deviceId}`, { method: 'DELETE' });
-                await loadServerCart();
+                await loadServerCart(false);
             }
         });
 
@@ -287,7 +312,7 @@
             clearBtn.addEventListener('click', async () => {
                 if (confirm('Clear all devices from your basket?')) {
                     await fetch('/api/cart/clear', { method: 'DELETE' });
-                    await loadServerCart();
+                    await loadServerCart(false);
                 }
             });
         }
@@ -403,7 +428,7 @@
 
                             if (verifyRes.ok && verifyData.success) {
                                 openModal(orderSuccessModal);
-                                await loadServerCart();
+                                await loadServerCart(false);
                             } else {
                                 alert(verifyData.message || 'Verification issue. Please contact support.');
                             }
@@ -429,7 +454,7 @@
             });
         }
 
-        // Initialize Cart Display
-        await loadServerCart();
+        // Initial Server Cart Fetch
+        await loadServerCart(true);
     });
 </script>

@@ -16,18 +16,21 @@
 
     <!-- Base Global Stylesheet -->
     <link rel="stylesheet" href="/css/style.css">
-    
 
     <!-- Optional Page-Specific Stylesheet -->
     <% if (typeof extraCss !=='undefined' ) { %>
         <link rel="stylesheet" href="<%= extraCss %>">
-        <% } %>
+    <% } %>
 </head>
 
 <body>
+    <!-- Main Branded Preloader with Centered logo-icon.png -->
     <div class="preloader" id="preloader">
         <div class="loader-inner">
-            <div class="loader-ring"></div>
+            <div class="loader-circle-wrapper">
+                <div class="loader-ring"></div>
+                <img src="/assets/images/logo-icon.png" alt="ROINAX Icon" class="loader-center-icon">
+            </div>
             <div class="loader-brand">
                 <span class="loader-title">ROINAX</span>
                 <span class="loader-sub">GLOBAL</span>
@@ -50,11 +53,11 @@
 
     <%- include('../partials/header') %>
 
-        <%- body %>
+    <%- body %>
 
-            <%- include('../partials/footer') %>
+    <%- include('../partials/footer') %>
 
-                <script src="/js/main.js"></script>
+    <script src="/js/main.js"></script>
 </body>
 
 </html>

@@ -86,15 +86,18 @@ ul {
 /* ==========================================================================
    Preloader & Scroll Progress
    ========================================================================== */
+/* ==========================================================================
+   Preloader & Scroll Progress (Branded Circle with Centered logo-icon.png)
+   ========================================================================== */
 .preloader {
     position: fixed;
     inset: 0;
     background: radial-gradient(circle at center, #111f13 0%, #060908 75%);
-    z-index: 9999;
+    z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.6s var(--ease), visibility 0.6s var(--ease);
+    transition: opacity 0.5s var(--ease), visibility 0.5s var(--ease);
 }
 
 .preloader.hidden {
@@ -107,17 +110,35 @@ ul {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
+}
+
+.loader-circle-wrapper {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .loader-ring {
-    width: 64px;
-    height: 64px;
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
-    border: 3px solid rgba(130, 209, 43, 0.15);
+    border: 3.5px solid rgba(130, 209, 43, 0.15);
     border-top-color: var(--green-lime);
     border-right-color: var(--green-main);
+    box-shadow: 0 0 18px rgba(83, 169, 34, 0.25);
     animation: spin 0.9s linear infinite;
+}
+
+.loader-center-icon {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    animation: pulseIcon 1.8s ease-in-out infinite;
+    z-index: 2;
 }
 
 .loader-brand {
@@ -166,11 +187,21 @@ ul {
     }
 }
 
+@keyframes pulseIcon {
+    0%, 100% {
+        transform: scale(0.92);
+        opacity: 0.85;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
 @keyframes loadSlide {
     0% {
         transform: translateX(-100%);
     }
-
     100% {
         transform: translateX(260%);
     }

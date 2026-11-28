@@ -131,6 +131,55 @@ html, body {
     opacity: 0.8;
 }
 
+/* Non-Intrusive Cart Table Inline Loader */
+.cart-inline-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem 1rem;
+    gap: 14px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.brand-mini-loader {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-spin-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.08);
+    border-top-color: var(--green-lime);
+    border-right-color: var(--green-main);
+    animation: roinaxMiniSpin 0.8s linear infinite;
+}
+
+.mini-center-icon {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    animation: roinaxMiniPulse 1.6s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes roinaxMiniSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes roinaxMiniPulse {
+    0%, 100% { transform: scale(0.9); opacity: 0.85; }
+    50% { transform: scale(1.06); opacity: 1; }
+}
+
 /* Item Rows */
 .cart-row {
     display: flex;
@@ -140,6 +189,13 @@ html, body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     gap: 16px;
     width: 100%;
+    transition: opacity 0.2s ease;
+}
+
+/* Subtle Loading State for Active Row */
+.cart-row.row-updating {
+    opacity: 0.65;
+    pointer-events: none;
 }
 
 .row-info {
@@ -202,6 +258,14 @@ html, body {
     font-size: 0.88rem;
     font-weight: 700;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-spinner {
+    font-size: 0.82rem;
+    color: var(--green-lime);
 }
 
 .row-total {
@@ -394,9 +458,7 @@ html, body {
     margin-bottom: 22px;
 }
 
-/* ==========================================================================
-   Modals
-   ========================================================================== */
+/* Modals */
 .custom-modal {
     position: fixed;
     inset: 0;
@@ -577,9 +639,7 @@ html, body {
     background: rgba(255, 255, 255, 0.07);
 }
 
-/* ==========================================================================
-   Responsive Adaptations
-   ========================================================================== */
+/* Responsive Adaptations */
 @media (max-width: 991px) {
     .cart-layout-grid {
         grid-template-columns: 1fr;
@@ -592,7 +652,6 @@ html, body {
     }
 }
 
-/* Mobile Screen Polish (< 640px) */
 @media (max-width: 640px) {
     .cart-page {
         padding: 1.25rem 0.5rem 6.5rem !important;
